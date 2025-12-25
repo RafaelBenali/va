@@ -164,18 +164,19 @@ bot_settings  -- simple key-value for bot config
 | **Dependencies** | WS-1.1 |
 | **Parallel With** | WS-1.4 |
 | **Effort** | M |
-| **Status** | In Progress |
+| **Status** | Complete |
 | **Started** | 2025-12-25 |
+| **Completed** | 2025-12-25 |
 
 **Tasks:**
-- [ ] Set up python-telegram-bot or aiogram
-- [ ] Register bot with BotFather
-- [ ] Implement /start with welcome message
-- [ ] Implement /help command
-- [ ] Implement /settings command
-- [ ] Add optional user whitelist (restrict to specific Telegram user IDs)
-- [ ] Secure bot token storage
-- [ ] Set up webhook or polling
+- [x] Set up python-telegram-bot or aiogram
+- [x] Register bot with BotFather (documentation provided)
+- [x] Implement /start with welcome message
+- [x] Implement /help command
+- [x] Implement /settings command
+- [x] Add optional user whitelist (restrict to specific Telegram user IDs)
+- [x] Secure bot token storage
+- [x] Set up webhook or polling
 
 **Deliverables:**
 - Telegram bot application
@@ -183,9 +184,9 @@ bot_settings  -- simple key-value for bot config
 - Bot configuration
 
 **Acceptance Criteria:**
-- [ ] Bot responds to /start and /help
-- [ ] Bot token securely stored (not in code)
-- [ ] Optional whitelist working
+- [x] Bot responds to /start and /help
+- [x] Bot token securely stored (not in code)
+- [x] Optional whitelist working
 
 ---
 
@@ -199,6 +200,8 @@ bot_settings  -- simple key-value for bot config
 | **Dependencies** | WS-1.1, WS-1.2 |
 | **Parallel With** | WS-1.3 |
 | **Effort** | M |
+| **Status** | In Progress |
+| **Started** | 2025-12-25 |
 
 **Tasks:**
 - [ ] Set up Telethon/Pyrogram client
