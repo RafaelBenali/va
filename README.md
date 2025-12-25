@@ -1,18 +1,42 @@
 # Telegram News Search Engine (TNSE)
 
-A news aggregation and search engine for public Telegram channels.
+A Telegram bot for monitoring public Telegram channels, aggregating news content, and providing ranked search results based on engagement metrics.
 
 ## Overview
 
-TNSE is a Telegram bot-first application that monitors public Telegram channels, aggregates news content, and provides ranked search results based on engagement metrics.
+TNSE is a **Telegram-bot-first** application that helps you:
+
+- **Monitor** public Telegram channels for news content
+- **Search** posts using keywords (supports Russian, English, Ukrainian)
+- **Rank** results by engagement metrics (views, reactions, relative engagement)
+- **Export** results to CSV or JSON
+- **Save** search configurations as topics for quick access
+
+No web frontend needed - the Telegram bot is the entire user interface.
 
 ## Features
 
-- Monitor public Telegram channels
-- Metrics-only mode (no LLM API costs)
-- Engagement-based ranking (views, reactions, relative engagement)
-- Export to CSV, JSON, and text formats
-- Optional LLM-powered semantic analysis
+### Core Features
+
+- **Channel Management:** Add, remove, and monitor public Telegram channels
+- **Keyword Search:** Full-text search with support for Cyrillic languages
+- **Engagement Ranking:** Results ranked by views, reactions, and relative engagement
+- **Pagination:** Navigate search results with inline buttons
+- **Export:** Download results as CSV or JSON files
+- **Saved Topics:** Save and rerun search configurations
+- **Templates:** Pre-built search templates for common topics
+
+### Performance
+
+- Search response time: < 3 seconds
+- 24-hour content window
+- Automatic content collection every 15-30 minutes
+
+### Security
+
+- Optional user whitelist (Telegram user ID based)
+- Secure token storage
+- No external authentication required
 
 ## Quick Start
 
@@ -20,37 +44,94 @@ TNSE is a Telegram bot-first application that monitors public Telegram channels,
 
 - Python 3.10+
 - Docker and Docker Compose
-- Make (optional, but recommended)
+- Telegram Bot Token (from [@BotFather](https://t.me/BotFather))
+- Telegram API credentials (from [my.telegram.org](https://my.telegram.org))
 
 ### Setup
 
-1. Clone the repository and navigate to the project directory
+1. **Clone and configure:**
 
-2. Start infrastructure services:
    ```bash
-   make docker-up
-   ```
-   This starts PostgreSQL and Redis containers.
-
-3. Set up Python environment:
-   ```bash
-   make setup
-   ```
-   Or manually:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # or `venv\Scripts\activate` on Windows
-   pip install -r requirements-dev.txt
-   pip install -e .
+   git clone <repository-url>
+   cd va
    cp .env.example .env
    ```
 
-4. Edit `.env` with your configuration (especially Telegram credentials)
+2. **Edit `.env`** with your Telegram credentials:
 
-5. Run the application:
    ```bash
-   make run-dev
+   TELEGRAM_BOT_TOKEN=your_bot_token
+   TELEGRAM_API_ID=your_api_id
+   TELEGRAM_API_HASH=your_api_hash
    ```
+
+3. **Start services:**
+
+   ```bash
+   # Using Make
+   make docker-up
+   make setup
+   make run-dev
+
+   # Or using Docker Compose
+   docker-compose up -d
+   ```
+
+4. **Start using the bot:**
+   - Open Telegram
+   - Search for your bot
+   - Send `/start`
+
+## Bot Commands
+
+| Command | Description |
+|---------|-------------|
+| `/start` | Start the bot |
+| `/help` | Show all commands |
+| `/addchannel @name` | Add channel to monitor |
+| `/removechannel @name` | Stop monitoring channel |
+| `/channels` | List monitored channels |
+| `/search <query>` | Search for posts |
+| `/export [csv\|json]` | Export search results |
+| `/savetopic <name>` | Save current search |
+| `/topics` | List saved topics |
+| `/topic <name>` | Run saved topic |
+| `/templates` | Show pre-built templates |
+| `/import` | Bulk import channels (with file) |
+| `/health` | Show channel health status |
+
+See the full [User Guide](docs/USER_GUIDE.md) for detailed usage.
+
+## Architecture
+
+```
++------------------+
+|   Telegram Bot   |  <-- The entire user interface
+|   (python-tg)    |
++--------+---------+
+         |
++--------+---------+
+|   Bot Service    |
+|  (Commands/UI)   |
++--------+---------+
+         |
++--------+---------+
+|  Search Service  |
+|  (Query/Rank)    |
++--------+---------+
+         |
++--------+---------+
+| Content Pipeline |
+| (Collection/NLP) |
++--------+---------+
+         |
++--------+------------------------+
+         |                        |
++--------+---------+   +----------+----------+
+|   PostgreSQL     |   |       Redis         |
+|   (Primary DB)   |   |   (Cache/Queue)     |
++------------------+   +---------------------+
+```
 
 ## Development
 
@@ -77,33 +158,78 @@ make ci            # Run all CI checks
 make docker-up     # Start PostgreSQL and Redis
 make docker-down   # Stop all services
 make docker-logs   # View service logs
-make docker-ps     # Show running containers
 ```
 
 ## Project Structure
 
 ```
-tnse/
-├── src/tnse/           # Application source code
-│   ├── core/           # Core modules (config, logging)
-│   └── main.py         # FastAPI application
-├── tests/              # Test suite
-│   ├── unit/           # Unit tests
-│   └── integration/    # Integration tests
-├── docker-compose.yml  # Docker services
-├── Makefile            # Development commands
-└── .env.example        # Environment template
+va/
+├── src/tnse/                 # Application source code
+│   ├── bot/                  # Telegram bot handlers
+│   ├── core/                 # Core modules (config, logging)
+│   ├── db/                   # Database models and base
+│   ├── engagement/           # Engagement metrics service
+│   ├── export/               # Export functionality
+│   ├── pipeline/             # Content collection pipeline
+│   ├── ranking/              # Ranking algorithm
+│   ├── search/               # Search service
+│   ├── telegram/             # Telegram API client
+│   └── topics/               # Topic management
+├── tests/                    # Test suite
+│   ├── unit/                 # Unit tests
+│   ├── integration/          # Integration tests
+│   └── performance/          # Performance benchmarks
+├── docs/                     # Documentation
+│   ├── USER_GUIDE.md         # Bot usage guide
+│   ├── DEPLOYMENT.md         # Deployment instructions
+│   └── BOTFATHER_SETUP.md    # Bot registration guide
+├── devlog/                   # Development logs
+├── docker-compose.yml        # Docker services
+├── Makefile                  # Development commands
+└── .env.example              # Environment template
 ```
 
 ## Configuration
 
-See `.env.example` for all available configuration options. Key settings:
+Key environment variables:
 
-- `POSTGRES_*` - Database connection
-- `REDIS_*` - Redis connection
-- `TELEGRAM_BOT_TOKEN` - Telegram bot token (from @BotFather)
-- `TELEGRAM_API_ID/HASH` - MTProto credentials (from my.telegram.org)
-- `LLM_ENABLED` - Enable/disable LLM mode
+| Variable | Description |
+|----------|-------------|
+| `TELEGRAM_BOT_TOKEN` | Bot token from BotFather |
+| `TELEGRAM_API_ID` | API ID from my.telegram.org |
+| `TELEGRAM_API_HASH` | API Hash from my.telegram.org |
+| `POSTGRES_*` | Database connection settings |
+| `REDIS_*` | Redis connection settings |
+| `ALLOWED_TELEGRAM_USERS` | Comma-separated user IDs for access control |
+
+See `.env.example` for all available options.
+
+## Documentation
+
+- [User Guide](docs/USER_GUIDE.md) - How to use the bot
+- [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment
+- [BotFather Setup](docs/BOTFATHER_SETUP.md) - Bot registration
+
+## Testing
+
+The project includes comprehensive tests:
+
+- **Unit Tests:** 600+ tests covering all modules
+- **Integration Tests:** End-to-end bot command testing
+- **Performance Tests:** Benchmarks ensuring < 3 second response time
+
+```bash
+# Run all tests
+make test
+
+# Run with coverage
+make test-cov
+
+# Run specific test types
+pytest tests/unit/ -v
+pytest tests/integration/ -v
+pytest tests/performance/ -v
+```
 
 ## License
 
