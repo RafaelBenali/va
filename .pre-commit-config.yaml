@@ -1,0 +1,71 @@
+# =============================================================================
+# TNSE - Telegram News Search Engine
+# Pre-commit Configuration
+# =============================================================================
+# Install hooks with: pre-commit install
+# Run manually with: pre-commit run --all-files
+# =============================================================================
+
+repos:
+  # General file fixes
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # Python code formatting with Black
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        language_version: python3.10
+
+  # Import sorting with isort
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+
+  # Linting with Ruff
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.8
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+
+  # Type checking with mypy
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.7.1
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - pydantic>=2.5.0
+          - pydantic-settings>=2.1.0
+          - structlog>=23.2.0
+          - fastapi>=0.104.0
+        args: ["--ignore-missing-imports"]
+        files: ^src/
+
+  # Check for secrets
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: \.env\.example$
+
+# CI configuration
+ci:
+  autofix_commit_msg: 'style: auto-fix by pre-commit hooks'
+  autoupdate_commit_msg: 'chore: update pre-commit hooks'

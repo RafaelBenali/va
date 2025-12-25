@@ -1,0 +1,165 @@
+version: "3.8"
+
+# =============================================================================
+# TNSE - Telegram News Search Engine
+# Docker Compose Configuration for Local Development
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:14-alpine
+    container_name: tnse_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tnse}
+      POSTGRES_USER: ${POSTGRES_USER:-tnse_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tnse_dev_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tnse_user} -d ${POSTGRES_DB:-tnse}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tnse_network
+
+  # ---------------------------------------------------------------------------
+  # Redis - Cache and Message Queue
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: tnse_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tnse_network
+
+  # ---------------------------------------------------------------------------
+  # TNSE Application (API Server)
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tnse_app
+    restart: unless-stopped
+    environment:
+      - APP_ENV=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-tnse}
+      - POSTGRES_USER=${POSTGRES_USER:-tnse_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-tnse_dev_password}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - ./src:/app/src:ro
+      - ./tests:/app/tests:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - tnse_network
+    profiles:
+      - app
+
+  # ---------------------------------------------------------------------------
+  # Celery Worker (Background Task Processing)
+  # ---------------------------------------------------------------------------
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tnse_celery_worker
+    command: celery -A src.tnse.core.celery_app worker --loglevel=info
+    restart: unless-stopped
+    environment:
+      - APP_ENV=development
+      - LOG_LEVEL=INFO
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-tnse}
+      - POSTGRES_USER=${POSTGRES_USER:-tnse_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-tnse_dev_password}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    volumes:
+      - ./src:/app/src:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - tnse_network
+    profiles:
+      - worker
+
+  # ---------------------------------------------------------------------------
+  # Celery Beat (Periodic Task Scheduler)
+  # ---------------------------------------------------------------------------
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tnse_celery_beat
+    command: celery -A src.tnse.core.celery_app beat --loglevel=info
+    restart: unless-stopped
+    environment:
+      - APP_ENV=development
+      - LOG_LEVEL=INFO
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    volumes:
+      - ./src:/app/src:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - tnse_network
+    profiles:
+      - worker
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  tnse_network:
+    driver: bridge
