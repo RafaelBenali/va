@@ -240,16 +240,17 @@ bot_settings  -- simple key-value for bot config
 | **Dependencies** | WS-1.3 (Bot), WS-1.4 (Telegram API) |
 | **Parallel With** | WS-1.6 |
 | **Effort** | S |
-| **Status** | In Progress |
+| **Status** | Complete |
 | **Started** | 2025-12-25 |
+| **Completed** | 2025-12-25 |
 
 **Tasks:**
-- [ ] Implement /addchannel @username command
-- [ ] Implement /removechannel @username command
-- [ ] Implement /channels (list all monitored)
-- [ ] Implement /channelinfo @username (show metadata)
-- [ ] Add validation feedback in bot messages
-- [ ] Show channel health status
+- [x] Implement /addchannel @username command
+- [x] Implement /removechannel @username command
+- [x] Implement /channels (list all monitored)
+- [x] Implement /channelinfo @username (show metadata)
+- [x] Add validation feedback in bot messages
+- [x] Show channel health status
 
 **Bot Commands:**
 ```
@@ -260,10 +261,10 @@ bot_settings  -- simple key-value for bot config
 ```
 
 **Acceptance Criteria:**
-- [ ] Can add channels via bot command
-- [ ] Can remove channels via bot command
-- [ ] Channel list displays correctly
-- [ ] Validation errors shown in bot response
+- [x] Can add channels via bot command
+- [x] Can remove channels via bot command
+- [x] Channel list displays correctly
+- [x] Validation errors shown in bot response
 
 ---
 
