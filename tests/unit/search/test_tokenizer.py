@@ -17,7 +17,11 @@ class TestTokenizer:
     """Tests for the Tokenizer class."""
 
     def test_tokenize_english_text(self) -> None:
-        """Test tokenization of basic English text."""
+        """Test tokenization of basic English text.
+
+        Note: With default settings, stop words are removed.
+        'this', 'is', 'a' are stop words and will be filtered.
+        """
         from src.tnse.search.tokenizer import Tokenizer
 
         tokenizer = Tokenizer()
@@ -25,7 +29,8 @@ class TestTokenizer:
         tokens = tokenizer.tokenize(text)
 
         assert isinstance(tokens, list)
-        assert len(tokens) == 6
+        # 'this', 'is', 'a' are stop words, so only 3 tokens remain
+        assert len(tokens) == 3
         assert "hello" in tokens
         assert "world" in tokens
         assert "test" in tokens
@@ -145,18 +150,25 @@ class TestTokenizer:
             assert token == token.lower()
 
     def test_tokenize_minimum_length(self) -> None:
-        """Test that very short tokens are filtered out."""
+        """Test that very short tokens are filtered out.
+
+        Note: With stop words enabled, many short words are removed.
+        We disable stop words here to test min_token_length specifically.
+        """
         from src.tnse.search.tokenizer import Tokenizer
 
-        tokenizer = Tokenizer(min_token_length=2)
+        tokenizer = Tokenizer(min_token_length=2, remove_stop_words=False)
         text = "a I am on the go"
         tokens = tokenizer.tokenize(text)
 
-        # Single letter tokens should be filtered
+        # Single letter tokens should be filtered by min_token_length
         assert "a" not in tokens
         assert "i" not in tokens
+        # These are 2+ characters so should be included
         assert "am" in tokens
         assert "on" in tokens
+        assert "the" in tokens
+        assert "go" in tokens
 
 
 class TestCyrillicNormalization:
