@@ -490,7 +490,97 @@ docker-compose up -d
 
 ---
 
+## Render.com Deployment
+
+### Overview
+
+Render.com provides a simple platform for deploying TNSE with managed PostgreSQL and Redis. The project includes a `render.yaml` Blueprint for automated deployment.
+
+### Quick Start with Render
+
+1. **Fork/Connect Repository**: Connect your repository to Render.com
+2. **Create Blueprint**: Use `render.yaml` to create all services
+3. **Configure Secrets**: Set required environment variables in Dashboard
+
+### Required Environment Variables
+
+These must be set manually in the Render Dashboard:
+
+| Variable | Description | How to Get |
+|----------|-------------|------------|
+| `TELEGRAM_BOT_TOKEN` | Bot API token | Create bot with @BotFather |
+| `TELEGRAM_API_ID` | Telegram API ID | https://my.telegram.org |
+| `TELEGRAM_API_HASH` | Telegram API Hash | https://my.telegram.org |
+| `TELEGRAM_WEBHOOK_URL` | Webhook endpoint | Your Render app URL + `/webhook` |
+
+### Automatically Provided Variables
+
+These are set automatically by Render's Blueprint:
+
+| Variable | Source |
+|----------|--------|
+| `DATABASE_URL` | Managed PostgreSQL |
+| `REDIS_URL` | Managed Redis |
+| `SECRET_KEY` | Auto-generated |
+| `PORT` | Assigned by Render |
+| `CELERY_BROKER_URL` | From Redis |
+| `CELERY_RESULT_BACKEND` | From Redis |
+
+### Production Settings
+
+The following are already configured in `render.yaml`:
+
+```bash
+APP_ENV=production
+DEBUG=false
+LOG_LEVEL=INFO
+WORKERS=2
+```
+
+### Webhook vs Polling Mode
+
+For Render.com deployment, **webhook mode is recommended**:
+
+```bash
+BOT_POLLING_MODE=false
+TELEGRAM_WEBHOOK_URL=https://tnse-web.onrender.com/webhook
+```
+
+Webhooks are more efficient because:
+- Telegram pushes updates to your server
+- No continuous polling connection needed
+- Better for serverless/container environments
+
+### URL Parsing
+
+The config module automatically parses Render's URL-based configuration:
+
+- `DATABASE_URL` is parsed into host, port, user, password, database
+- `REDIS_URL` is parsed into host, port, password, database number
+- `rediss://` scheme automatically enables TLS for Redis
+
+### Render Deployment Checklist
+
+- [ ] Repository connected to Render
+- [ ] Blueprint created from `render.yaml`
+- [ ] PostgreSQL database provisioned
+- [ ] Redis service provisioned
+- [ ] `TELEGRAM_BOT_TOKEN` set in Dashboard
+- [ ] `TELEGRAM_API_ID` set in Dashboard
+- [ ] `TELEGRAM_API_HASH` set in Dashboard
+- [ ] `TELEGRAM_WEBHOOK_URL` set (your-app.onrender.com/webhook)
+- [ ] `BOT_POLLING_MODE` set to `false`
+- [ ] `ALLOWED_TELEGRAM_USERS` set (optional)
+- [ ] All services showing "Live" in Dashboard
+- [ ] Bot responds to /start command
+
+See `.env.render.example` for a complete reference of all environment variables.
+
+---
+
 ## Deployment Checklist
+
+### General Deployment
 
 - [ ] PostgreSQL configured and accessible
 - [ ] Redis configured and accessible
@@ -511,7 +601,7 @@ docker-compose up -d
 
 For issues or questions:
 
-1. Check the logs: `docker logs tnse-bot`
+1. Check the logs: `docker logs tnse-bot` (or Render Dashboard logs)
 2. Review this guide and troubleshooting section
 3. Check the GitHub issues
 4. Contact the maintainers
