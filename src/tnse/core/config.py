@@ -18,11 +18,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class DatabaseSettings(BaseSettings):
     """PostgreSQL database configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="POSTGRES_")
+    model_config = SettingsConfigDict(env_prefix="POSTGRES_", extra="ignore", populate_by_name=True)
 
     host: str = Field(default="localhost", description="Database host")
     port: int = Field(default=5432, description="Database port")
-    db: str = Field(default="tnse", alias="database", description="Database name")
+    db: str = Field(default="tnse", validation_alias="database", description="Database name")
     user: str = Field(default="tnse_user", description="Database user")
     password: str = Field(default="", description="Database password")
 
@@ -123,6 +123,8 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
+        populate_by_name=True,
+        validate_default=True,
     )
 
     # Application
@@ -158,7 +160,7 @@ class Settings(BaseSettings):
 
     # Allowed Telegram users (comma-separated list)
     allowed_telegram_users: Optional[str] = Field(
-        default=None, alias="ALLOWED_TELEGRAM_USERS"
+        default=None, validation_alias="ALLOWED_TELEGRAM_USERS"
     )
 
     # Nested settings
@@ -171,10 +173,12 @@ class Settings(BaseSettings):
         default_factory=ReactionWeightSettings
     )
 
-    @field_validator("log_level")
+    @field_validator("log_level", mode="before")
     @classmethod
     def validate_log_level(cls, value: str) -> str:
         """Validate log level is one of the allowed values."""
+        if not isinstance(value, str):
+            raise ValueError("log_level must be a string")
         allowed = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
         upper_value = value.upper()
         if upper_value not in allowed:
