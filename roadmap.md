@@ -275,6 +275,8 @@ bot_settings  -- simple key-value for bot config
 | **Dependencies** | WS-1.4 (Telegram API), WS-1.2 (Database) |
 | **Parallel With** | WS-1.5 |
 | **Effort** | M |
+| **Status** | In Progress |
+| **Started** | 2025-12-25 |
 
 **Tasks:**
 - [ ] Set up Celery/RQ with Redis
