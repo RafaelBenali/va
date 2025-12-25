@@ -77,7 +77,7 @@ class TestPostModel:
         # Check either column has index or there's an index containing the column
         published_at_column = Post.__table__.columns["published_at"]
         has_index = published_at_column.index is True or any(
-            published_at_column in idx.columns
+            "published_at" in [col.name for col in idx.columns]
             for idx in Post.__table__.indexes
         )
         assert has_index, "published_at should be indexed for time-range queries"
@@ -90,10 +90,11 @@ class TestPostModel:
             channel_id=uuid4(),
             telegram_message_id=123456,
             published_at=datetime.now(timezone.utc),
+            is_forwarded=False,
         )
 
         assert post.telegram_message_id == 123456
-        assert post.is_forwarded is False  # Default
+        assert post.is_forwarded is False
 
     def test_post_is_forwarded_defaults_to_false(self):
         """Test that is_forwarded defaults to False."""
