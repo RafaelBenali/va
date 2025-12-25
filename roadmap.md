@@ -278,18 +278,19 @@ bot_settings  -- simple key-value for bot config
 | **Dependencies** | WS-1.4 (Telegram API), WS-1.2 (Database) |
 | **Parallel With** | WS-1.5 |
 | **Effort** | M |
-| **Status** | In Progress |
+| **Status** | Complete |
 | **Started** | 2025-12-25 |
+| **Completed** | 2025-12-25 |
 
 **Tasks:**
-- [ ] Set up Celery/RQ with Redis
-- [ ] Create content collection job
-- [ ] Implement 24-hour content window
-- [ ] Extract text content
-- [ ] Extract media metadata
-- [ ] Detect forwarded messages
-- [ ] Store in database
-- [ ] Schedule periodic runs (every 15-30 min)
+- [x] Set up Celery/RQ with Redis
+- [x] Create content collection job
+- [x] Implement 24-hour content window
+- [x] Extract text content
+- [x] Extract media metadata
+- [x] Detect forwarded messages
+- [x] Store in database
+- [x] Schedule periodic runs (every 15-30 min)
 
 **Deliverables:**
 - Background job scheduler
@@ -297,10 +298,10 @@ bot_settings  -- simple key-value for bot config
 - Media metadata extractor
 
 **Acceptance Criteria:**
-- [ ] Collects 24-hour content
-- [ ] Extracts text, image, video metadata
-- [ ] Runs automatically on schedule
-- [ ] Handles failures gracefully
+- [x] Collects 24-hour content
+- [x] Extracts text, image, video metadata
+- [x] Runs automatically on schedule
+- [x] Handles failures gracefully
 
 ---
 
