@@ -5,7 +5,7 @@ Provides the main bot application setup and runner functions.
 This is the primary interface for starting and running the bot.
 """
 
-from telegram.ext import Application, CommandHandler
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler
 
 from src.tnse.bot.channel_handlers import (
     addchannel_command,
@@ -14,12 +14,18 @@ from src.tnse.bot.channel_handlers import (
     removechannel_command,
 )
 from src.tnse.bot.config import BotConfig, create_bot_config
+from src.tnse.bot.export_handlers import export_command
 from src.tnse.bot.handlers import (
     error_handler,
     help_command,
     require_access,
     settings_command,
     start_command,
+)
+from src.tnse.bot.search_handlers import (
+    pagination_callback,
+    search_command,
+    SEARCH_CALLBACK_PREFIX,
 )
 from src.tnse.core.logging import configure_logging, get_logger
 
@@ -70,6 +76,17 @@ def create_bot_application(config: BotConfig) -> Application:
     application.add_handler(CommandHandler("removechannel", require_access(removechannel_command)))
     application.add_handler(CommandHandler("channels", require_access(channels_command)))
     application.add_handler(CommandHandler("channelinfo", require_access(channelinfo_command)))
+
+    # Search commands (WS-2.4)
+    application.add_handler(CommandHandler("search", require_access(search_command)))
+
+    # Export commands (WS-2.5)
+    application.add_handler(CommandHandler("export", require_access(export_command)))
+
+    # Callback query handlers for pagination
+    application.add_handler(
+        CallbackQueryHandler(pagination_callback, pattern=f"^{SEARCH_CALLBACK_PREFIX}|^noop$")
+    )
 
     # Register error handler
     application.add_error_handler(error_handler)

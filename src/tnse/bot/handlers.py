@@ -155,9 +155,9 @@ Channel Management:
 /channels - List all monitored channels
 /channelinfo @username - Show channel details and health status
 
-Search Commands (coming soon):
-/search <query> - Search for news by keyword
-/export - Export search results to CSV
+Search Commands:
+/search <query> - Search for news by keyword (with pagination)
+/export - Export search results to CSV (coming soon)
 
 Topic Management (coming soon):
 /savetopic <name> - Save current search configuration
