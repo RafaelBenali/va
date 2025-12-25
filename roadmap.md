@@ -403,6 +403,8 @@ relative_engagement = (views + reaction_score) / subscriber_count
 | **Dependencies** | WS-2.1 (Metrics), WS-2.2 (Search) |
 | **Parallel With** | None |
 | **Effort** | S |
+| **Status** | In Progress |
+| **Started** | 2025-12-26 |
 
 **Tasks:**
 - [ ] Create ranking service
