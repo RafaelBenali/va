@@ -89,6 +89,12 @@ def create_bot_config() -> BotConfig:
     This function reads configuration from environment variables
     through the application's Settings class.
 
+    Supports both polling and webhook modes:
+    - BOT_POLLING_MODE=true (default): Use long polling
+    - BOT_POLLING_MODE=false: Use webhooks (requires TELEGRAM_WEBHOOK_URL)
+
+    For Render.com deployment, webhook mode is recommended.
+
     Returns:
         BotConfig instance configured from environment.
 
@@ -107,10 +113,12 @@ def create_bot_config() -> BotConfig:
         raise BotTokenMissingError()
 
     allowed_users = settings.allowed_user_ids
+    polling_mode = settings.bot_polling_mode
+    webhook_url = settings.telegram.webhook_url
 
     return BotConfig(
         token=token,
         allowed_users=allowed_users,
-        polling_mode=True,  # Default to polling for simplicity
-        webhook_url=None,
+        polling_mode=polling_mode,
+        webhook_url=webhook_url,
     )

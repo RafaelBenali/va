@@ -160,14 +160,22 @@ class CelerySettings(BaseSettings):
 
 
 class TelegramSettings(BaseSettings):
-    """Telegram API configuration."""
+    """Telegram API configuration.
 
-    model_config = SettingsConfigDict(env_prefix="TELEGRAM_")
+    Supports both polling and webhook modes for the Telegram bot.
+    For production (Render.com), webhook mode is recommended.
+    """
+
+    model_config = SettingsConfigDict(env_prefix="TELEGRAM_", extra="ignore")
 
     bot_token: Optional[str] = Field(default=None, description="Telegram bot token")
     api_id: Optional[str] = Field(default=None, description="Telegram API ID")
     api_hash: Optional[str] = Field(default=None, description="Telegram API hash")
     phone: Optional[str] = Field(default=None, description="Telegram phone number")
+    webhook_url: Optional[str] = Field(
+        default=None,
+        description="Webhook URL for production (e.g., https://tnse-web.onrender.com/webhook)"
+    )
 
 
 class LLMSettings(BaseSettings):
@@ -253,6 +261,13 @@ class Settings(BaseSettings):
     # Allowed Telegram users (comma-separated list)
     allowed_telegram_users: Optional[str] = Field(
         default=None, validation_alias="ALLOWED_TELEGRAM_USERS"
+    )
+
+    # Bot mode
+    bot_polling_mode: bool = Field(
+        default=True,
+        alias="BOT_POLLING_MODE",
+        description="Use polling mode (True) or webhook mode (False)"
     )
 
     # Nested settings
