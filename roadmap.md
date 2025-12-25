@@ -538,16 +538,17 @@ Found 47 results (showing 1-5)
 | **Dependencies** | WS-2.4 (Search) |
 | **Parallel With** | WS-3.2 |
 | **Effort** | S |
-| **Status** | In Progress |
+| **Status** | Complete |
 | **Started** | 2025-12-26 |
+| **Completed** | 2025-12-26 |
 
 **Tasks:**
-- [ ] Implement /savetopic <name> command
-- [ ] Implement /topics command (list saved)
-- [ ] Implement /topic <name> (run saved search)
-- [ ] Implement /deletetopic <name>
-- [ ] Create pre-built templates (corruption, politics, tech, etc.)
-- [ ] Implement /templates command
+- [x] Implement /savetopic <name> command
+- [x] Implement /topics command (list saved)
+- [x] Implement /topic <name> (run saved search)
+- [x] Implement /deletetopic <name>
+- [x] Create pre-built templates (corruption, politics, tech, etc.)
+- [x] Implement /templates command
 
 **Bot Commands:**
 ```
@@ -556,12 +557,13 @@ Found 47 results (showing 1-5)
 /topic corruption_news - Run saved topic search
 /deletetopic corruption_news - Delete saved topic
 /templates - Show pre-built templates
+/usetemplate corruption - Run template search
 ```
 
 **Acceptance Criteria:**
-- [ ] Topics saved and retrieved
-- [ ] Templates work
-- [ ] Quick access via commands
+- [x] Topics saved and retrieved
+- [x] Templates work
+- [x] Quick access via commands
 
 ---
 
