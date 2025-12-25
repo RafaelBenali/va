@@ -298,17 +298,24 @@ class TestErrorHandler:
     @pytest.mark.asyncio
     async def test_error_handler_logs_error(self):
         """Test that error_handler logs the error."""
+        from src.tnse.bot import handlers
         from src.tnse.bot.handlers import error_handler
 
         update = MagicMock()
+        update.effective_message.reply_text = AsyncMock()
         context = MagicMock()
         context.error = Exception("Test error")
 
-        with patch("src.tnse.bot.handlers.get_logger") as mock_get_logger:
-            mock_logger = MagicMock()
-            mock_get_logger.return_value = mock_logger
+        # Patch the already-instantiated logger in the module
+        mock_logger = MagicMock()
+        original_logger = handlers.logger
+        handlers.logger = mock_logger
 
+        try:
             await error_handler(update, context)
 
             # Should have logged an error
             assert mock_logger.error.called or mock_logger.exception.called
+        finally:
+            # Restore original logger
+            handlers.logger = original_logger
