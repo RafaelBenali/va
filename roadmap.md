@@ -336,13 +336,16 @@ bot_settings  -- simple key-value for bot config
 | **Dependencies** | WS-1.6 (Content Pipeline) |
 | **Parallel With** | WS-2.2 |
 | **Effort** | M |
+| **Status** | Complete |
+| **Started** | 2025-12-26 |
+| **Completed** | 2025-12-26 |
 
 **Tasks:**
-- [ ] Extract view counts per post
-- [ ] Extract individual emoji reaction counts
-- [ ] Implement reaction score with configurable weights
-- [ ] Calculate relative engagement (engagement / subscribers)
-- [ ] Store metrics with timestamps
+- [x] Extract view counts per post
+- [x] Extract individual emoji reaction counts
+- [x] Implement reaction score with configurable weights
+- [x] Calculate relative engagement (engagement / subscribers)
+- [x] Store metrics with timestamps
 
 **Reaction Score Formula:**
 ```python
@@ -351,9 +354,9 @@ relative_engagement = (views + reaction_score) / subscriber_count
 ```
 
 **Acceptance Criteria:**
-- [ ] View counts extracted
-- [ ] Emoji counts stored separately
-- [ ] Scores calculated correctly
+- [x] View counts extracted
+- [x] Emoji counts stored separately
+- [x] Scores calculated correctly
 
 ---
 
