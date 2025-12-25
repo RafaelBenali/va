@@ -575,20 +575,21 @@ Found 47 results (showing 1-5)
 | **Dependencies** | WS-1.5 (Channel Management) |
 | **Parallel With** | WS-3.1 |
 | **Effort** | S |
-| **Status** | In Progress |
+| **Status** | Complete |
 | **Started** | 2025-12-26 |
+| **Completed** | 2025-12-26 |
 
 **Tasks:**
-- [ ] Implement /import command (accept file with channel list)
-- [ ] Validate all channels in batch
-- [ ] Report import results
-- [ ] Implement /health command (show channel statuses)
-- [ ] Alert on channel issues (rate limited, removed)
+- [x] Implement /import command (accept file with channel list)
+- [x] Validate all channels in batch
+- [x] Report import results
+- [x] Implement /health command (show channel statuses)
+- [x] Alert on channel issues (rate limited, removed)
 
 **Acceptance Criteria:**
-- [ ] Bulk import works
-- [ ] Health status visible
-- [ ] Issues reported
+- [x] Bulk import works
+- [x] Health status visible
+- [x] Issues reported
 
 ---
 
