@@ -157,7 +157,7 @@ Channel Management:
 
 Search Commands:
 /search <query> - Search for news by keyword (with pagination)
-/export - Export search results to CSV (coming soon)
+/export [csv|json] - Export search results to file
 
 Topic Management (coming soon):
 /savetopic <name> - Save current search configuration
