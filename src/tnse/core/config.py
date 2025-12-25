@@ -6,17 +6,31 @@ All configuration is externalized via environment variables.
 
 Requirements addressed:
 - NFR-M-005: Configuration MUST be externalized and environment-specific
+
+Render.com Compatibility:
+- Supports DATABASE_URL for PostgreSQL connection string
+- Supports REDIS_URL for Redis connection string
+- URL-based configuration takes precedence over individual variables
 """
 
+import os
 from functools import lru_cache
 from typing import Optional
+from urllib.parse import urlparse, unquote
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DatabaseSettings(BaseSettings):
-    """PostgreSQL database configuration."""
+    """PostgreSQL database configuration.
+
+    Supports two configuration modes:
+    1. DATABASE_URL: Single connection string (Render.com style)
+    2. Individual POSTGRES_* variables (traditional style)
+
+    DATABASE_URL takes precedence when set.
+    """
 
     model_config = SettingsConfigDict(env_prefix="POSTGRES_", extra="ignore", populate_by_name=True)
 
@@ -25,6 +39,36 @@ class DatabaseSettings(BaseSettings):
     db: str = Field(default="tnse", validation_alias="database", description="Database name")
     user: str = Field(default="tnse_user", description="Database user")
     password: str = Field(default="", description="Database password")
+
+    @model_validator(mode="before")
+    @classmethod
+    def parse_database_url(cls, values: dict) -> dict:
+        """Parse DATABASE_URL if present and extract components.
+
+        DATABASE_URL takes precedence over individual POSTGRES_* variables.
+        Supports standard PostgreSQL URL format:
+        postgresql://user:password@host:port/database
+        """
+        database_url = os.environ.get("DATABASE_URL")
+
+        if database_url:
+            parsed = urlparse(database_url)
+
+            # Extract components from URL
+            if parsed.hostname:
+                values["host"] = parsed.hostname
+            if parsed.port:
+                values["port"] = parsed.port
+            if parsed.username:
+                values["user"] = parsed.username
+            if parsed.password:
+                # Decode URL-encoded password
+                values["password"] = unquote(parsed.password)
+            if parsed.path and len(parsed.path) > 1:
+                # Remove leading slash from path to get database name
+                values["db"] = parsed.path[1:]
+
+        return values
 
     @property
     def url(self) -> str:
@@ -38,7 +82,15 @@ class DatabaseSettings(BaseSettings):
 
 
 class RedisSettings(BaseSettings):
-    """Redis configuration."""
+    """Redis configuration.
+
+    Supports two configuration modes:
+    1. REDIS_URL: Single connection string (Render.com style)
+    2. Individual REDIS_* variables (traditional style)
+
+    REDIS_URL takes precedence when set.
+    Supports both redis:// and rediss:// (TLS) schemes.
+    """
 
     model_config = SettingsConfigDict(env_prefix="REDIS_")
 
@@ -46,12 +98,52 @@ class RedisSettings(BaseSettings):
     port: int = Field(default=6379, description="Redis port")
     db: int = Field(default=0, description="Redis database number")
     password: Optional[str] = Field(default=None, description="Redis password")
+    use_tls: bool = Field(default=False, description="Use TLS for Redis connection")
+
+    @model_validator(mode="before")
+    @classmethod
+    def parse_redis_url(cls, values: dict) -> dict:
+        """Parse REDIS_URL if present and extract components.
+
+        REDIS_URL takes precedence over individual REDIS_* variables.
+        Supports standard Redis URL formats:
+        - redis://host:port/db
+        - redis://:password@host:port/db
+        - rediss://host:port/db (TLS)
+        """
+        redis_url = os.environ.get("REDIS_URL")
+
+        if redis_url:
+            parsed = urlparse(redis_url)
+
+            # Check for TLS (rediss:// scheme)
+            if parsed.scheme == "rediss":
+                values["use_tls"] = True
+
+            # Extract components from URL
+            if parsed.hostname:
+                values["host"] = parsed.hostname
+            if parsed.port:
+                values["port"] = parsed.port
+            if parsed.password:
+                # Decode URL-encoded password
+                values["password"] = unquote(parsed.password)
+
+            # Extract database number from path (e.g., /0, /1, /2)
+            if parsed.path and len(parsed.path) > 1:
+                try:
+                    values["db"] = int(parsed.path[1:])
+                except ValueError:
+                    pass  # Keep default if path is not a valid integer
+
+        return values
 
     @property
     def url(self) -> str:
         """Generate Redis connection URL."""
+        scheme = "rediss" if self.use_tls else "redis"
         auth = f":{self.password}@" if self.password else ""
-        return f"redis://{auth}{self.host}:{self.port}/{self.db}"
+        return f"{scheme}://{auth}{self.host}:{self.port}/{self.db}"
 
 
 class CelerySettings(BaseSettings):
