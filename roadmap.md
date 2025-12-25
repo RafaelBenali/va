@@ -120,16 +120,17 @@ This is a **lean, Telegram-bot-first** implementation plan. The Telegram bot IS 
 | **Dependencies** | None |
 | **Parallel With** | WS-1.1 |
 | **Effort** | S |
-| **Status** | In Progress |
+| **Status** | Complete |
 | **Started** | 2025-12-25 |
+| **Completed** | 2025-12-25 |
 
 **Tasks:**
-- [ ] Design schema for channels (metadata, health)
-- [ ] Design schema for posts (content, timestamps)
-- [ ] Design schema for engagement metrics (views, reactions per emoji)
-- [ ] Design schema for saved topics/templates
-- [ ] Create migrations (Alembic)
-- [ ] Create indexes for common queries
+- [x] Design schema for channels (metadata, health)
+- [x] Design schema for posts (content, timestamps)
+- [x] Design schema for engagement metrics (views, reactions per emoji)
+- [x] Design schema for saved topics/templates
+- [x] Create migrations (Alembic)
+- [x] Create indexes for common queries
 
 **Key Tables:**
 ```sql
@@ -143,9 +144,9 @@ bot_settings  -- simple key-value for bot config
 **Note:** No users, user_preferences, user_sessions, or auth tables needed!
 
 **Acceptance Criteria:**
-- [ ] All migrations run successfully
-- [ ] Schema supports core requirements
-- [ ] Indexes exist for: channel lookups, post timestamps, engagement
+- [x] All migrations run successfully
+- [x] Schema supports core requirements
+- [x] Indexes exist for: channel lookups, post timestamps, engagement
 
 ---
 
