@@ -638,7 +638,123 @@ Found 47 results (showing 1-5)
 
 ---
 
-## Phase 4: LLM Enhancement (Weeks 9-10) - OPTIONAL
+## Phase 4: Render.com Deployment (Week 9)
+
+**Theme:** Production-ready deployment on Render.com
+
+**Goal:** Deploy the bot to Render.com with managed PostgreSQL and Redis
+
+### Batch 4.1 (Week 9) - Sequential Execution
+
+---
+
+#### WS-4.1: Render.com Configuration
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-4.1 |
+| **Name** | Render.com Infrastructure Configuration |
+| **Description** | Create render.yaml and configure services for Render.com deployment |
+| **Dependencies** | WS-3.3 (Polish and Testing) |
+| **Parallel With** | None |
+| **Effort** | M |
+| **Status** | Complete |
+| **Started** | 2025-12-26 |
+| **Completed** | 2025-12-26 |
+
+**Tasks:**
+- [x] Create `render.yaml` Blueprint specification
+- [x] Configure PostgreSQL managed database service
+- [x] Configure Redis managed service
+- [x] Configure web service for FastAPI/health endpoints
+- [x] Configure background worker service for Celery
+- [x] Configure cron job for Celery beat scheduler
+- [x] Set up environment variable groups
+- [x] Configure health check endpoints for Render
+- [x] Set up auto-deploy from main branch
+
+**Deliverables:**
+- `render.yaml` - Render Blueprint file
+- Updated `Dockerfile` with Render-compatible configuration
+- Environment variable documentation for Render
+
+**Acceptance Criteria:**
+- [x] `render.yaml` validates successfully
+- [x] All services defined (web, worker, PostgreSQL, Redis)
+- [x] Health checks configured for each service
+- [x] Environment variables properly grouped
+
+---
+
+#### WS-4.2: Production Environment Configuration
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-4.2 |
+| **Name** | Production Environment Setup |
+| **Description** | Configure production-specific settings and secrets |
+| **Dependencies** | WS-4.1 |
+| **Parallel With** | None |
+| **Effort** | S |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Create `.env.render.example` with Render-specific variables
+- [ ] Configure DATABASE_URL format for Render PostgreSQL
+- [ ] Configure REDIS_URL format for Render Redis
+- [ ] Set production LOG_LEVEL and DEBUG settings
+- [ ] Configure Telegram webhook URL for production
+- [ ] Document required Render environment variables
+- [ ] Set up secret management best practices
+
+**Acceptance Criteria:**
+- [ ] All environment variables documented
+- [ ] Production settings secure (DEBUG=false, etc.)
+- [ ] Database connection strings use Render format
+
+---
+
+#### WS-4.3: Deployment Documentation
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-4.3 |
+| **Name** | Render Deployment Documentation |
+| **Description** | Create comprehensive deployment guide for Render.com |
+| **Dependencies** | WS-4.1, WS-4.2 |
+| **Parallel With** | None |
+| **Effort** | S |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Update `docs/DEPLOYMENT.md` with Render.com section
+- [ ] Create step-by-step Render deployment guide
+- [ ] Document Render Dashboard configuration steps
+- [ ] Add Telegram bot setup instructions for production
+- [ ] Document scaling options on Render
+- [ ] Add cost estimation notes
+- [ ] Create troubleshooting section for Render-specific issues
+- [ ] Update README.md with Render deployment badge/link
+
+**Acceptance Criteria:**
+- [ ] Complete Render deployment guide
+- [ ] Screenshots/instructions for Render Dashboard
+- [ ] Troubleshooting guide covers common issues
+
+---
+
+### Phase 4 Gate (Deployment)
+
+| Criterion | Target |
+|-----------|--------|
+| render.yaml valid | Blueprint deploys |
+| Services running | All 4 services healthy |
+| Bot responding | Commands work in production |
+| Database migrated | Schema applied |
+
+---
+
+## Phase 5: LLM Enhancement (Weeks 10-11) - OPTIONAL
 
 **Theme:** AI-powered features (if budget/need exists)
 
@@ -646,15 +762,15 @@ Found 47 results (showing 1-5)
 
 **Note:** This phase is entirely optional. The system works great with metrics-only search. Only implement if you need semantic topic analysis.
 
-### Batch 4.1 (Week 9)
+### Batch 5.1 (Week 10)
 
 ---
 
-#### WS-4.1: LLM Integration
+#### WS-5.1: LLM Integration
 
 | Field | Value |
 |-------|-------|
-| **ID** | WS-4.1 |
+| **ID** | WS-5.1 |
 | **Name** | LLM Provider Integration |
 | **Description** | Connect to OpenAI/Anthropic for semantic analysis |
 | **Dependencies** | WS-2.4 (Search) |
@@ -676,14 +792,14 @@ Found 47 results (showing 1-5)
 
 ---
 
-#### WS-4.2: Semantic Topic Analysis
+#### WS-5.2: Semantic Topic Analysis
 
 | Field | Value |
 |-------|-------|
-| **ID** | WS-4.2 |
+| **ID** | WS-5.2 |
 | **Name** | LLM-Powered Topic Categorization |
 | **Description** | Use LLM to categorize posts by topic |
-| **Dependencies** | WS-4.1 (LLM Integration) |
+| **Dependencies** | WS-5.1 (LLM Integration) |
 | **Parallel With** | None |
 | **Effort** | M |
 
@@ -702,7 +818,7 @@ Found 47 results (showing 1-5)
 
 ---
 
-### Phase 4 Gate
+### Phase 5 Gate
 
 | Criterion | Target |
 |-----------|--------|
@@ -745,8 +861,14 @@ Found 47 results (showing 1-5)
         v
    [FULL RELEASE]
         |
+        v
+[WS-4.1: Render Config] -> [WS-4.2: Prod Env] -> [WS-4.3: Deploy Docs]
+        |
+        v
+  [PRODUCTION DEPLOYED]
+        |
         v (optional)
-[WS-4.1: LLM] -> [WS-4.2: Semantic]
+[WS-5.1: LLM] -> [WS-5.2: Semantic]
 ```
 
 ---
@@ -758,9 +880,10 @@ Found 47 results (showing 1-5)
 | Phase 1: Bot + Foundation | 3 weeks | Bot running, channels managed, content collected |
 | Phase 2: Search + Ranking | 3 weeks | **MVP** - Working search with metrics |
 | Phase 3: Enhanced Features | 2 weeks | Topics, templates, polish |
-| Phase 4: LLM (Optional) | 2 weeks | Semantic analysis |
-| **Total (without LLM)** | **8 weeks** | Full metrics-only implementation |
-| **Total (with LLM)** | **10 weeks** | Full implementation with AI |
+| Phase 4: Render.com Deployment | 1 week | **PRODUCTION** - Bot deployed on Render.com |
+| Phase 5: LLM (Optional) | 2 weeks | Semantic analysis |
+| **Total (without LLM)** | **9 weeks** | Full production deployment |
+| **Total (with LLM)** | **11 weeks** | Full implementation with AI |
 
 ---
 
@@ -782,8 +905,11 @@ Found 47 results (showing 1-5)
 | WS-3.1 | Saved Topics | WS-2.4 | S |
 | WS-3.2 | Advanced Channel Management | WS-1.5 | S |
 | WS-3.3 | Polish and Testing | All | M |
-| WS-4.1 | LLM Integration (Optional) | WS-2.4 | M |
-| WS-4.2 | Semantic Topic Analysis (Optional) | WS-4.1 | M |
+| WS-4.1 | Render.com Configuration | WS-3.3 | M |
+| WS-4.2 | Production Environment Configuration | WS-4.1 | S |
+| WS-4.3 | Deployment Documentation | WS-4.1, WS-4.2 | S |
+| WS-5.1 | LLM Integration (Optional) | WS-2.4 | M |
+| WS-5.2 | Semantic Topic Analysis (Optional) | WS-5.1 | M |
 
 ---
 
