@@ -538,6 +538,8 @@ Found 47 results (showing 1-5)
 | **Dependencies** | WS-2.4 (Search) |
 | **Parallel With** | WS-3.2 |
 | **Effort** | S |
+| **Status** | In Progress |
+| **Started** | 2025-12-26 |
 
 **Tasks:**
 - [ ] Implement /savetopic <name> command
@@ -573,6 +575,8 @@ Found 47 results (showing 1-5)
 | **Dependencies** | WS-1.5 (Channel Management) |
 | **Parallel With** | WS-3.1 |
 | **Effort** | S |
+| **Status** | In Progress |
+| **Started** | 2025-12-26 |
 
 **Tasks:**
 - [ ] Implement /import command (accept file with channel list)

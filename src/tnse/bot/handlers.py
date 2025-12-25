@@ -159,11 +159,13 @@ Search Commands:
 /search <query> - Search for news by keyword (with pagination)
 /export [csv|json] - Export search results to file
 
-Topic Management (coming soon):
+Topic Management:
 /savetopic <name> - Save current search configuration
 /topics - List your saved topics
 /topic <name> - Run a saved topic search
+/deletetopic <name> - Delete a saved topic
 /templates - Show pre-built topic templates
+/usetemplate <name> - Run a pre-built template search
 
 For more information, visit the documentation or contact the bot administrator."""
 

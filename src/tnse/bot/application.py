@@ -7,6 +7,10 @@ This is the primary interface for starting and running the bot.
 
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler
 
+from src.tnse.bot.advanced_channel_handlers import (
+    health_command,
+    import_command,
+)
 from src.tnse.bot.channel_handlers import (
     addchannel_command,
     channels_command,
@@ -26,6 +30,14 @@ from src.tnse.bot.search_handlers import (
     pagination_callback,
     search_command,
     SEARCH_CALLBACK_PREFIX,
+)
+from src.tnse.bot.topic_handlers import (
+    savetopic_command,
+    topics_command,
+    topic_command,
+    deletetopic_command,
+    templates_command,
+    use_template_command,
 )
 from src.tnse.core.logging import configure_logging, get_logger
 
@@ -77,11 +89,23 @@ def create_bot_application(config: BotConfig) -> Application:
     application.add_handler(CommandHandler("channels", require_access(channels_command)))
     application.add_handler(CommandHandler("channelinfo", require_access(channelinfo_command)))
 
+    # Advanced channel management commands (WS-3.2)
+    application.add_handler(CommandHandler("import", require_access(import_command)))
+    application.add_handler(CommandHandler("health", require_access(health_command)))
+
     # Search commands (WS-2.4)
     application.add_handler(CommandHandler("search", require_access(search_command)))
 
     # Export commands (WS-2.5)
     application.add_handler(CommandHandler("export", require_access(export_command)))
+
+    # Topic management commands (WS-3.1)
+    application.add_handler(CommandHandler("savetopic", require_access(savetopic_command)))
+    application.add_handler(CommandHandler("topics", require_access(topics_command)))
+    application.add_handler(CommandHandler("topic", require_access(topic_command)))
+    application.add_handler(CommandHandler("deletetopic", require_access(deletetopic_command)))
+    application.add_handler(CommandHandler("templates", require_access(templates_command)))
+    application.add_handler(CommandHandler("usetemplate", require_access(use_template_command)))
 
     # Callback query handlers for pagination
     application.add_handler(
