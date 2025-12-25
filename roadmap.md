@@ -439,15 +439,18 @@ combined_score = relative_engagement * (1.0 - hours_since_post / 24)
 | **Dependencies** | WS-2.3 (Ranking), WS-1.3 (Bot) |
 | **Parallel With** | WS-2.5 |
 | **Effort** | M |
+| **Status** | Complete |
+| **Started** | 2025-12-26 |
+| **Completed** | 2025-12-26 |
 
 **Tasks:**
-- [ ] Implement /search <query> command
-- [ ] Format results with metrics display
-- [ ] Show emoji reaction breakdown
-- [ ] Implement inline keyboard pagination
-- [ ] Add "More results" button
-- [ ] Respect Telegram message length limits
-- [ ] Add Telegram links to original posts
+- [x] Implement /search <query> command
+- [x] Format results with metrics display
+- [x] Show emoji reaction breakdown
+- [x] Implement inline keyboard pagination
+- [x] Add "More results" button
+- [x] Respect Telegram message length limits
+- [x] Add Telegram links to original posts
 
 **Message Format:**
 ```
@@ -467,10 +470,10 @@ Found 47 results (showing 1-5)
 ```
 
 **Acceptance Criteria:**
-- [ ] /search returns ranked results
-- [ ] Pagination works via buttons
-- [ ] Metrics displayed clearly
-- [ ] Links work
+- [x] /search returns ranked results
+- [x] Pagination works via buttons
+- [x] Metrics displayed clearly
+- [x] Links work
 
 ---
 
@@ -484,6 +487,8 @@ Found 47 results (showing 1-5)
 | **Dependencies** | WS-2.4 (Search Commands) |
 | **Parallel With** | WS-2.4 |
 | **Effort** | S |
+| **Status** | In Progress |
+| **Started** | 2025-12-26 |
 
 **Tasks:**
 - [ ] Implement /export command after search
