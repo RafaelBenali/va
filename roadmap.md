@@ -240,6 +240,8 @@ bot_settings  -- simple key-value for bot config
 | **Dependencies** | WS-1.3 (Bot), WS-1.4 (Telegram API) |
 | **Parallel With** | WS-1.6 |
 | **Effort** | S |
+| **Status** | In Progress |
+| **Started** | 2025-12-25 |
 
 **Tasks:**
 - [ ] Implement /addchannel @username command

@@ -149,11 +149,11 @@ Basic Commands:
 /help - Show this help message
 /settings - View and configure bot settings
 
-Channel Management (coming soon):
+Channel Management:
 /addchannel @username - Add a channel to monitor
 /removechannel @username - Remove a channel from monitoring
 /channels - List all monitored channels
-/channelinfo @username - Show channel details
+/channelinfo @username - Show channel details and health status
 
 Search Commands (coming soon):
 /search <query> - Search for news by keyword

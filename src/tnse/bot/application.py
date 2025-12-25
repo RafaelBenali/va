@@ -7,6 +7,12 @@ This is the primary interface for starting and running the bot.
 
 from telegram.ext import Application, CommandHandler
 
+from src.tnse.bot.channel_handlers import (
+    addchannel_command,
+    channels_command,
+    channelinfo_command,
+    removechannel_command,
+)
 from src.tnse.bot.config import BotConfig, create_bot_config
 from src.tnse.bot.handlers import (
     error_handler,
@@ -58,6 +64,12 @@ def create_bot_application(config: BotConfig) -> Application:
     application.add_handler(CommandHandler("start", require_access(start_command)))
     application.add_handler(CommandHandler("help", require_access(help_command)))
     application.add_handler(CommandHandler("settings", require_access(settings_command)))
+
+    # Channel management commands (WS-1.5)
+    application.add_handler(CommandHandler("addchannel", require_access(addchannel_command)))
+    application.add_handler(CommandHandler("removechannel", require_access(removechannel_command)))
+    application.add_handler(CommandHandler("channels", require_access(channels_command)))
+    application.add_handler(CommandHandler("channelinfo", require_access(channelinfo_command)))
 
     # Register error handler
     application.add_error_handler(error_handler)

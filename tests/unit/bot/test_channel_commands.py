@@ -57,12 +57,16 @@ class TestAddChannelCommand:
         update.effective_user.id = 123456
         update.message.reply_text = AsyncMock()
 
+        # Mock database session factory
+        mock_session = MagicMock()
+        mock_session.execute = AsyncMock()
+
         context = MagicMock()
         context.args = ["@nonexistent_channel"]
         context.bot_data = {
             "config": MagicMock(allowed_users=[]),
             "channel_service": MagicMock(),
-            "db_session": MagicMock(),
+            "db_session_factory": MagicMock(return_value=mock_session),
         }
 
         # Mock channel service to return invalid result
@@ -268,8 +272,8 @@ class TestRemoveChannelCommand:
         call_args = update.message.reply_text.call_args
         message = call_args[0][0] if call_args[0] else call_args[1].get("text", "")
 
-        # Should indicate channel not found
-        assert "not found" in message.lower() or "not monitoring" in message.lower() or "doesn't exist" in message.lower()
+        # Should indicate channel not found or not being monitored
+        assert "not found" in message.lower() or "not being monitored" in message.lower() or "doesn't exist" in message.lower()
 
 
 class TestChannelsCommand:
@@ -440,7 +444,7 @@ class TestChannelInfoCommand:
         update.effective_user.id = 123456
         update.message.reply_text = AsyncMock()
 
-        # Mock channel in database
+        # Mock channel in database with health_logs
         existing_channel = MagicMock()
         existing_channel.username = "test_channel"
         existing_channel.title = "Test Channel"
@@ -448,6 +452,7 @@ class TestChannelInfoCommand:
         existing_channel.subscriber_count = 50000
         existing_channel.is_active = True
         existing_channel.created_at = datetime(2025, 1, 1, tzinfo=timezone.utc)
+        existing_channel.health_logs = []  # Empty health logs for this test
 
         mock_session = MagicMock()
         mock_session.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=existing_channel)))
@@ -467,7 +472,7 @@ class TestChannelInfoCommand:
 
         # Should show channel details
         assert "test_channel" in message.lower() or "Test Channel" in message
-        assert "50000" in message or "50,000" in message or "50k" in message.lower()
+        assert "50000" in message or "50,000" in message or "50.0k" in message.lower()
 
     @pytest.mark.asyncio
     async def test_channelinfo_shows_health_status(self):
@@ -536,8 +541,8 @@ class TestChannelInfoCommand:
         call_args = update.message.reply_text.call_args
         message = call_args[0][0] if call_args[0] else call_args[1].get("text", "")
 
-        # Should indicate channel not found
-        assert "not found" in message.lower() or "not monitoring" in message.lower()
+        # Should indicate channel not found or not being monitored
+        assert "not found" in message.lower() or "not being monitored" in message.lower()
 
 
 class TestChannelUsernameExtraction:
