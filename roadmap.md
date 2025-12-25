@@ -367,6 +367,8 @@ relative_engagement = (views + reaction_score) / subscriber_count
 | **Dependencies** | WS-1.6 (Content Pipeline) |
 | **Parallel With** | WS-2.1 |
 | **Effort** | M |
+| **Status** | In Progress |
+| **Started** | 2025-12-26 |
 
 **Tasks:**
 - [ ] Implement tokenization for Russian/English/Ukrainian
