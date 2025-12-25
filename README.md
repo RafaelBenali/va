@@ -1,5 +1,7 @@
 # Telegram News Search Engine (TNSE)
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
 A Telegram bot for monitoring public Telegram channels, aggregating news content, and providing ranked search results based on engagement metrics.
 
 ## Overview
@@ -207,8 +209,19 @@ See `.env.example` for all available options.
 ## Documentation
 
 - [User Guide](docs/USER_GUIDE.md) - How to use the bot
-- [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment
+- [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment (Docker, Manual, Render.com)
 - [BotFather Setup](docs/BOTFATHER_SETUP.md) - Bot registration
+
+### Deploy to Render.com
+
+The easiest way to deploy TNSE is using Render.com's Blueprint feature:
+
+1. Fork this repository
+2. Click the "Deploy to Render" button above
+3. Configure your Telegram credentials in the Render Dashboard
+4. Run database migrations
+
+See the [Render.com Deployment Guide](docs/DEPLOYMENT.md#rendercom-deployment) for detailed instructions, cost estimates, and troubleshooting.
 
 ## Testing
 
