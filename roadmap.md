@@ -370,21 +370,22 @@ relative_engagement = (views + reaction_score) / subscriber_count
 | **Dependencies** | WS-1.6 (Content Pipeline) |
 | **Parallel With** | WS-2.1 |
 | **Effort** | M |
-| **Status** | In Progress |
+| **Status** | Complete |
 | **Started** | 2025-12-26 |
+| **Completed** | 2025-12-26 |
 
 **Tasks:**
-- [ ] Implement tokenization for Russian/English/Ukrainian
-- [ ] Set up PostgreSQL full-text search (or simple Elasticsearch)
-- [ ] Handle Cyrillic normalization
-- [ ] Search within 24-hour window
-- [ ] Support multiple keywords
-- [ ] Add result caching
+- [x] Implement tokenization for Russian/English/Ukrainian
+- [x] Set up PostgreSQL full-text search (or simple Elasticsearch)
+- [x] Handle Cyrillic normalization
+- [x] Search within 24-hour window
+- [x] Support multiple keywords
+- [x] Add result caching
 
 **Acceptance Criteria:**
-- [ ] Keyword search returns matches
-- [ ] Russian and English work
-- [ ] Search response < 3 seconds
+- [x] Keyword search returns matches
+- [x] Russian and English work
+- [x] Search response < 3 seconds
 
 ---
 
