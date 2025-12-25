@@ -501,3 +501,135 @@ class ReactionCount(Base, UUIDPrimaryKeyMixin):
 
     def __repr__(self) -> str:
         return f"<ReactionCount(id={self.id}, emoji={self.emoji}, count={self.count})>"
+
+
+class SavedTopic(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Model storing user-saved topic configurations.
+
+    Allows users to save search configurations for quick access.
+
+    Attributes:
+        id: Unique identifier (UUID)
+        name: Unique name for the saved topic
+        description: Optional description of the topic
+        keywords: Comma-separated or JSON list of keywords
+        search_config: JSON configuration for search parameters
+        is_active: Whether the topic is currently active
+        created_at: When topic was created
+        updated_at: When topic was last modified
+    """
+
+    __tablename__ = "saved_topics"
+
+    name: Mapped[str] = mapped_column(
+        String(255),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+    description: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    keywords: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    search_config: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<SavedTopic(id={self.id}, name={self.name})>"
+
+
+class TopicTemplate(Base, UUIDPrimaryKeyMixin):
+    """Model storing pre-built topic templates.
+
+    Provides common search configurations for quick use.
+
+    Attributes:
+        id: Unique identifier (UUID)
+        name: Unique name for the template
+        description: Description of what the template searches for
+        keywords: Pre-configured keywords for the template
+        category: Category for grouping templates (politics, tech, etc.)
+        is_builtin: Whether this is a system-provided template
+        created_at: When template was created
+    """
+
+    __tablename__ = "topic_templates"
+
+    name: Mapped[str] = mapped_column(
+        String(255),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+    description: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    keywords: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    category: Mapped[Optional[str]] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+    )
+    is_builtin: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<TopicTemplate(id={self.id}, name={self.name}, category={self.category})>"
+
+
+class BotSettings(Base, UUIDPrimaryKeyMixin):
+    """Model storing bot configuration as key-value pairs.
+
+    Simple key-value store for bot configuration options.
+
+    Attributes:
+        id: Unique identifier (UUID)
+        key: Unique setting key
+        value: Setting value (JSON or plain text)
+        updated_at: When setting was last modified
+    """
+
+    __tablename__ = "bot_settings"
+
+    key: Mapped[str] = mapped_column(
+        String(255),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+    value: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<BotSettings(id={self.id}, key={self.key})>"
