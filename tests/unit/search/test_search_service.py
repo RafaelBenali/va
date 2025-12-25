@@ -55,22 +55,21 @@ class TestKeywordSearch:
 
         service = SearchService(session_factory=mock_session_factory)
 
-        # Mock the database query result
+        # Create mock row objects that behave like SQLAlchemy Row
+        mock_row = MagicMock()
+        mock_row.post_id = str(uuid4())
+        mock_row.channel_id = str(uuid4())
+        mock_row.channel_username = "test_channel"
+        mock_row.channel_title = "Test Channel"
+        mock_row.text_content = "This is a test about corruption in politics"
+        mock_row.published_at = datetime.now(timezone.utc)
+        mock_row.view_count = 1000
+        mock_row.reaction_score = 50.0
+        mock_row.relative_engagement = 0.05
+        mock_row.telegram_message_id = 123
+
         mock_result = MagicMock()
-        mock_result.all.return_value = [
-            {
-                "post_id": str(uuid4()),
-                "channel_id": str(uuid4()),
-                "channel_username": "test_channel",
-                "channel_title": "Test Channel",
-                "text_content": "This is a test about corruption in politics",
-                "published_at": datetime.now(timezone.utc),
-                "view_count": 1000,
-                "reaction_score": 50.0,
-                "relative_engagement": 0.05,
-                "telegram_message_id": 123,
-            }
-        ]
+        mock_result.all.return_value = [mock_row]
         mock_session.execute.return_value = mock_result
 
         results = await service.search("corruption")
