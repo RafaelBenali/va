@@ -247,6 +247,11 @@ class Post(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         back_populates="post",
         cascade="all, delete-orphan",
     )
+    engagement_metrics: Mapped[list["EngagementMetrics"]] = relationship(
+        "EngagementMetrics",
+        back_populates="post",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<Post(id={self.id}, channel_id={self.channel_id}, msg_id={self.telegram_message_id})>"
@@ -373,3 +378,126 @@ class PostMedia(Base, UUIDPrimaryKeyMixin):
 
     def __repr__(self) -> str:
         return f"<PostMedia(id={self.id}, post_id={self.post_id}, type={self.media_type})>"
+
+
+class EngagementMetrics(Base, UUIDPrimaryKeyMixin):
+    """Model storing engagement metrics for a post at a point in time.
+
+    Metrics are collected periodically to track engagement changes.
+    Each record represents a snapshot of engagement at collected_at time.
+
+    Attributes:
+        id: Unique identifier (UUID)
+        post_id: Reference to the measured post
+        view_count: Number of views
+        forward_count: Number of forwards/shares
+        reply_count: Number of replies/comments
+        reaction_score: Calculated weighted reaction score
+        relative_engagement: Engagement normalized by subscriber count
+        collected_at: When metrics were collected
+    """
+
+    __tablename__ = "engagement_metrics"
+    __table_args__ = (
+        Index("ix_engagement_metrics_collected_at", "collected_at"),
+    )
+
+    post_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("posts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    view_count: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+    forward_count: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+    reply_count: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+    reaction_score: Mapped[float] = mapped_column(
+        Float,
+        default=0.0,
+        nullable=False,
+    )
+    relative_engagement: Mapped[float] = mapped_column(
+        Float,
+        default=0.0,
+        nullable=False,
+    )
+    collected_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    # Relationships
+    post: Mapped["Post"] = relationship(
+        "Post",
+        back_populates="engagement_metrics",
+    )
+    reactions: Mapped[list["ReactionCount"]] = relationship(
+        "ReactionCount",
+        back_populates="engagement_metrics",
+        cascade="all, delete-orphan",
+    )
+
+    def __repr__(self) -> str:
+        return f"<EngagementMetrics(id={self.id}, post_id={self.post_id}, views={self.view_count})>"
+
+
+class ReactionCount(Base, UUIDPrimaryKeyMixin):
+    """Model storing individual emoji reaction counts.
+
+    Stores each emoji type separately for detailed reaction analysis.
+    Each engagement_metrics record can have multiple reaction types.
+
+    Attributes:
+        id: Unique identifier (UUID)
+        engagement_metrics_id: Reference to parent metrics record
+        emoji: Emoji identifier (e.g., 'thumbs_up', 'heart', 'fire')
+        count: Number of this reaction type
+    """
+
+    __tablename__ = "reaction_counts"
+    __table_args__ = (
+        UniqueConstraint(
+            "engagement_metrics_id",
+            "emoji",
+            name="uq_reaction_counts_metrics_emoji",
+        ),
+        Index("ix_reaction_counts_emoji", "emoji"),
+    )
+
+    engagement_metrics_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("engagement_metrics.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    emoji: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+    )
+    count: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    # Relationships
+    engagement_metrics: Mapped["EngagementMetrics"] = relationship(
+        "EngagementMetrics",
+        back_populates="reactions",
+    )
+
+    def __repr__(self) -> str:
+        return f"<ReactionCount(id={self.id}, emoji={self.emoji}, count={self.count})>"
