@@ -19,6 +19,52 @@ class TestBotConfig:
         assert hasattr(config, "token")
         assert config.token == "test_token"
 
+    def test_bot_config_from_env_webhook_mode(self):
+        """Test that BotConfig reads webhook URL from environment."""
+        from src.tnse.bot.config import create_bot_config
+
+        with patch.dict(
+            "os.environ",
+            {
+                "TELEGRAM_BOT_TOKEN": "123456789:TestToken",
+                "BOT_POLLING_MODE": "false",
+                "TELEGRAM_WEBHOOK_URL": "https://tnse-web.onrender.com/webhook",
+            },
+        ):
+            config = create_bot_config()
+            assert config.polling_mode is False
+            assert config.webhook_url == "https://tnse-web.onrender.com/webhook"
+
+    def test_bot_config_from_env_polling_mode(self):
+        """Test that BotConfig defaults to polling mode."""
+        from src.tnse.bot.config import create_bot_config
+
+        with patch.dict(
+            "os.environ",
+            {
+                "TELEGRAM_BOT_TOKEN": "123456789:TestToken",
+                "BOT_POLLING_MODE": "true",
+            },
+        ):
+            config = create_bot_config()
+            assert config.polling_mode is True
+            assert config.webhook_url is None
+
+    def test_bot_config_webhook_url_required_when_not_polling(self):
+        """Test that webhook_url is read when polling mode is disabled."""
+        from src.tnse.bot.config import create_bot_config
+
+        with patch.dict(
+            "os.environ",
+            {
+                "TELEGRAM_BOT_TOKEN": "123456789:TestToken",
+                "BOT_POLLING_MODE": "false",
+                "TELEGRAM_WEBHOOK_URL": "https://example.com/webhook",
+            },
+        ):
+            config = create_bot_config()
+            assert config.webhook_url == "https://example.com/webhook"
+
     def test_bot_config_validates_token_format(self):
         """Test that BotConfig validates token format."""
         from src.tnse.bot.config import BotConfig
