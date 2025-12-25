@@ -163,6 +163,8 @@ bot_settings  -- simple key-value for bot config
 | **Dependencies** | WS-1.1 |
 | **Parallel With** | WS-1.4 |
 | **Effort** | M |
+| **Status** | In Progress |
+| **Started** | 2025-12-25 |
 
 **Tasks:**
 - [ ] Set up python-telegram-bot or aiogram
