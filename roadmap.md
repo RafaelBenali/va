@@ -487,20 +487,21 @@ Found 47 results (showing 1-5)
 | **Dependencies** | WS-2.4 (Search Commands) |
 | **Parallel With** | WS-2.4 |
 | **Effort** | S |
-| **Status** | In Progress |
+| **Status** | Complete |
 | **Started** | 2025-12-26 |
+| **Completed** | 2025-12-26 |
 
 **Tasks:**
-- [ ] Implement /export command after search
-- [ ] Generate CSV with results
-- [ ] Generate JSON with results
-- [ ] Send file via bot
-- [ ] Include Telegram links
+- [x] Implement /export command after search
+- [x] Generate CSV with results
+- [x] Generate JSON with results
+- [x] Send file via bot
+- [x] Include Telegram links
 
 **Acceptance Criteria:**
-- [ ] /export sends CSV file
-- [ ] File contains all result data
-- [ ] Links included
+- [x] /export sends CSV file
+- [x] File contains all result data
+- [x] Links included
 
 ---
 
