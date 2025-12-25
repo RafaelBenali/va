@@ -403,14 +403,15 @@ relative_engagement = (views + reaction_score) / subscriber_count
 | **Dependencies** | WS-2.1 (Metrics), WS-2.2 (Search) |
 | **Parallel With** | None |
 | **Effort** | S |
-| **Status** | In Progress |
+| **Status** | Complete |
 | **Started** | 2025-12-26 |
+| **Completed** | 2025-12-26 |
 
 **Tasks:**
-- [ ] Create ranking service
-- [ ] Implement combined score: engagement * recency
-- [ ] Add sorting options (views, reactions, combined)
-- [ ] Add recency boost for newer content
+- [x] Create ranking service
+- [x] Implement combined score: engagement * recency
+- [x] Add sorting options (views, reactions, combined)
+- [x] Add recency boost for newer content
 
 **Ranking Formula:**
 ```python
@@ -418,9 +419,9 @@ combined_score = relative_engagement * (1.0 - hours_since_post / 24)
 ```
 
 **Acceptance Criteria:**
-- [ ] Results ranked by combined score
-- [ ] Sorting options work
-- [ ] Ranking is consistent
+- [x] Results ranked by combined score
+- [x] Sorting options work
+- [x] Ranking is consistent
 
 ---
 
