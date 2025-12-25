@@ -1,0 +1,354 @@
+# =============================================================================
+# TNSE - Telegram News Search Engine
+# Render.com Blueprint Specification
+# =============================================================================
+#
+# This file defines the infrastructure-as-code configuration for deploying
+# TNSE on Render.com. It includes:
+# - PostgreSQL managed database
+# - Redis managed service
+# - Web service for FastAPI/health endpoints
+# - Background worker for Celery tasks
+# - Cron job for Celery beat scheduler
+#
+# Work Stream: WS-4.1 - Render.com Configuration
+#
+# Usage:
+# 1. Fork or connect this repository to Render.com
+# 2. Create a new Blueprint from this render.yaml
+# 3. Configure environment variables in Render Dashboard
+# 4. Deploy
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Databases
+# -----------------------------------------------------------------------------
+databases:
+  - name: tnse-postgres
+    plan: starter  # starter, standard, pro, or higher
+    region: oregon  # Choose region closest to your users
+    databaseName: tnse
+    user: tnse_user
+    # postgresMajorVersion: 14  # Uncomment to pin version
+    # ipAllowList:  # Uncomment to restrict access
+    #   - source: 0.0.0.0/0
+    #     description: Allow all
+
+# -----------------------------------------------------------------------------
+# Redis
+# -----------------------------------------------------------------------------
+services:
+  # Redis for caching and Celery message broker
+  - type: redis
+    name: tnse-redis
+    plan: starter  # starter, standard, pro
+    region: oregon
+    maxmemoryPolicy: allkeys-lru
+    # ipAllowList:  # Uncomment to restrict access
+    #   - source: 0.0.0.0/0
+    #     description: Allow all
+
+  # ---------------------------------------------------------------------------
+  # Web Service - FastAPI Application
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: tnse-web
+    runtime: docker
+    plan: starter  # starter, standard, pro
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # Build arguments for Docker
+    dockerCommand: uvicorn src.tnse.main:app --host 0.0.0.0 --port $PORT
+    # Health check configuration
+    healthCheckPath: /health
+    # Auto-deploy from main branch
+    autoDeploy: true
+    # Environment variables
+    envVars:
+      # Application settings
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: WORKERS
+        value: "2"
+      # Database connection (from managed database)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tnse-postgres
+          property: connectionString
+      # Parse DATABASE_URL into individual components for the app
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: tnse-postgres
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: tnse-postgres
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: tnse-postgres
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: tnse-postgres
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: tnse-postgres
+          property: password
+      # Redis connection (from managed Redis)
+      - key: REDIS_URL
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: connectionString
+      - key: REDIS_HOST
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: port
+      # Celery settings
+      - key: CELERY_BROKER_URL
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: connectionString
+      # Secrets - set these in Render Dashboard
+      - key: SECRET_KEY
+        generateValue: true
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false  # Must be set manually
+      - key: TELEGRAM_API_ID
+        sync: false  # Must be set manually
+      - key: TELEGRAM_API_HASH
+        sync: false  # Must be set manually
+      # Optional settings
+      - key: ALLOWED_TELEGRAM_USERS
+        sync: false  # Set manually if needed
+
+  # ---------------------------------------------------------------------------
+  # Telegram Bot Service
+  # ---------------------------------------------------------------------------
+  - type: worker
+    name: tnse-bot
+    runtime: docker
+    plan: starter
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: python -m src.tnse.bot
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: LOG_LEVEL
+        value: INFO
+      # Database connection
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: tnse-postgres
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: tnse-postgres
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: tnse-postgres
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: tnse-postgres
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: tnse-postgres
+          property: password
+      # Redis connection
+      - key: REDIS_URL
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: connectionString
+      - key: REDIS_HOST
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: port
+      # Celery settings
+      - key: CELERY_BROKER_URL
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: connectionString
+      # Telegram credentials - set in Render Dashboard
+      - key: SECRET_KEY
+        generateValue: true
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_API_ID
+        sync: false
+      - key: TELEGRAM_API_HASH
+        sync: false
+      - key: ALLOWED_TELEGRAM_USERS
+        sync: false
+
+  # ---------------------------------------------------------------------------
+  # Celery Worker - Background Task Processing
+  # ---------------------------------------------------------------------------
+  - type: worker
+    name: tnse-celery-worker
+    runtime: docker
+    plan: starter
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: celery -A src.tnse.core.celery_app worker --loglevel=info
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      # Database connection
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: tnse-postgres
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: tnse-postgres
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: tnse-postgres
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: tnse-postgres
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: tnse-postgres
+          property: password
+      # Redis connection
+      - key: REDIS_URL
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: connectionString
+      - key: REDIS_HOST
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: port
+      # Celery settings
+      - key: CELERY_BROKER_URL
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: connectionString
+      # Telegram credentials for content collection
+      - key: TELEGRAM_API_ID
+        sync: false
+      - key: TELEGRAM_API_HASH
+        sync: false
+
+  # ---------------------------------------------------------------------------
+  # Celery Beat - Periodic Task Scheduler
+  # ---------------------------------------------------------------------------
+  - type: worker
+    name: tnse-celery-beat
+    runtime: docker
+    plan: starter
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: celery -A src.tnse.core.celery_app beat --loglevel=info
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      # Redis connection
+      - key: REDIS_URL
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: connectionString
+      - key: REDIS_HOST
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: port
+      # Celery settings
+      - key: CELERY_BROKER_URL
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          name: tnse-redis
+          type: redis
+          property: connectionString
+
+# -----------------------------------------------------------------------------
+# Environment Groups (Optional - for shared secrets)
+# -----------------------------------------------------------------------------
+# You can define environment groups in the Render Dashboard to share
+# secrets across services. This is recommended for:
+# - TELEGRAM_BOT_TOKEN
+# - TELEGRAM_API_ID
+# - TELEGRAM_API_HASH
+# - SECRET_KEY
+#
+# To use environment groups:
+# 1. Create an environment group in Render Dashboard
+# 2. Add the secrets to the group
+# 3. Reference the group in each service that needs it
+# -----------------------------------------------------------------------------
