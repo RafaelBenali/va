@@ -31,9 +31,9 @@ databases:
     databaseName: tnse
     user: tnse_user
     # postgresMajorVersion: 14  # Uncomment to pin version
-    # ipAllowList:  # Uncomment to restrict access
-    #   - source: 0.0.0.0/0
-    #     description: Allow all
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: Allow all
 
 # -----------------------------------------------------------------------------
 # Redis
