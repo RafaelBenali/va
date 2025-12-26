@@ -45,9 +45,9 @@ services:
     plan: starter  # starter, standard, pro
     region: oregon
     maxmemoryPolicy: allkeys-lru
-    # ipAllowList:  # Uncomment to restrict access
-    #   - source: 0.0.0.0/0
-    #     description: Allow all
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: Allow all
 
   # ---------------------------------------------------------------------------
   # Web Service - FastAPI Application
