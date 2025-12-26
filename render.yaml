@@ -26,7 +26,7 @@
 # -----------------------------------------------------------------------------
 databases:
   - name: tnse-postgres
-    plan: starter  # starter, standard, pro, or higher
+    plan: free  # free, basic, standard, pro, or higher
     region: oregon  # Choose region closest to your users
     databaseName: tnse
     user: tnse_user
