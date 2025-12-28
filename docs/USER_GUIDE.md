@@ -504,10 +504,22 @@ Healthy (4):
 
 | Issue | Solution |
 |-------|----------|
-| "Access denied" | Your Telegram user ID is not in the whitelist. Contact the administrator. |
+| "Access denied" | Your Telegram user ID is not in the whitelist. Use `/settings` to find your ID and contact the administrator. |
 | "Channel service not available" | The bot's backend services are not running. Contact the administrator. |
-| "No results found" | Try different keywords or check if channels are being monitored. |
-| "Cannot add channel" | Ensure the channel is public and the username is correct. |
+| "Search service not available" | The search backend is temporarily unavailable. Wait a few minutes and try again. |
+| "No results found" | Try different keywords, check if channels are monitored with `/channels`, or verify channel health with `/health`. |
+| "Cannot add channel" | Ensure the channel is public and the username is correct (case-sensitive). |
+| "Rate limited" | Too many requests. Wait 30-60 seconds before retrying. |
+
+### Quick Diagnostics
+
+Use these commands to diagnose issues:
+
+| Command | What It Checks |
+|---------|----------------|
+| `/settings` | Your user ID and access mode |
+| `/health` | Status of all monitored channels |
+| `/channels` | List of active channels |
 
 ### Understanding Engagement Scores
 
@@ -522,30 +534,53 @@ Formula: `combined_score = relative_engagement * (1 - hours_since_post / 24)`
 
 ### Getting Help
 
-- Use `/help` for command reference
+- Use `/help` or `/h` for command reference
 - Use `/export help` for export-specific help
+- Check `/health` for channel issues
+- See [BOT_TROUBLESHOOTING.md](BOT_TROUBLESHOOTING.md) for detailed troubleshooting
 - Contact your bot administrator for access or technical issues
 
 ---
 
 ## Quick Reference
 
-| Command | Description |
-|---------|-------------|
-| `/start` | Start the bot |
-| `/help` | Show all commands |
-| `/settings` | View bot settings |
-| `/addchannel @name` | Add channel to monitor |
-| `/removechannel @name` | Stop monitoring channel |
-| `/channels` | List monitored channels |
-| `/channelinfo @name` | Show channel details |
-| `/search <query>` | Search for posts |
-| `/export [csv\|json]` | Export search results |
-| `/savetopic <name>` | Save current search |
-| `/topics` | List saved topics |
-| `/topic <name>` | Run saved topic |
-| `/deletetopic <name>` | Delete saved topic |
-| `/templates` | Show pre-built templates |
-| `/usetemplate <name>` | Run template search |
-| `/import` | Bulk import channels (with file) |
-| `/health` | Show channel health status |
+| Command | Alias | Description |
+|---------|-------|-------------|
+| `/start` | - | Start the bot |
+| `/help` | `/h` | Show all commands |
+| `/settings` | - | View bot settings |
+| `/addchannel @name` | - | Add channel to monitor |
+| `/removechannel @name` | - | Stop monitoring channel |
+| `/channels` | `/ch` | List monitored channels |
+| `/channelinfo @name` | - | Show channel details |
+| `/search <query>` | `/s` | Search for posts |
+| `/export [csv\|json]` | `/e` | Export search results |
+| `/savetopic <name>` | - | Save current search |
+| `/topics` | `/t` | List saved topics |
+| `/topic <name>` | - | Run saved topic |
+| `/deletetopic <name>` | - | Delete saved topic |
+| `/templates` | - | Show pre-built templates |
+| `/usetemplate <name>` | - | Run template search |
+| `/import` | - | Bulk import channels (with file) |
+| `/health` | - | Show channel health status |
+
+---
+
+## Command Aliases
+
+For faster access, the following command aliases are available:
+
+| Full Command | Short Alias |
+|--------------|-------------|
+| `/search` | `/s` |
+| `/channels` | `/ch` |
+| `/help` | `/h` |
+| `/topics` | `/t` |
+| `/export` | `/e` |
+
+**Example:**
+```
+/s corruption news    # Same as /search corruption news
+/ch                   # Same as /channels
+/e json               # Same as /export json
+```
