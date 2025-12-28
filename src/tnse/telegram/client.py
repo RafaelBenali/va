@@ -9,12 +9,16 @@ Requirements addressed:
 - Create Telegram API abstraction layer
 - Store credentials encrypted (via configuration)
 - Set up Telethon/Pyrogram client
+
+Python 3.10+ Modernization (WS-6.3):
+- Uses X | None instead of Optional[X] for union types
+- Uses Self type for context managers
 """
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Self
 
 if TYPE_CHECKING:
     from src.tnse.core.config import Settings
@@ -36,7 +40,7 @@ class TelegramClientConfig:
     api_hash: str
     session_name: str = "tnse_session"
     connection_timeout: int = 30
-    phone: Optional[str] = None
+    phone: str | None = None
 
     @classmethod
     def from_settings(cls, settings: "Settings") -> "TelegramClientConfig":
@@ -71,13 +75,13 @@ class MediaInfo:
     """
 
     media_type: str
-    file_id: Optional[str] = None
-    file_size: Optional[int] = None
-    mime_type: Optional[str] = None
-    width: Optional[int] = None
-    height: Optional[int] = None
-    duration: Optional[int] = None
-    thumbnail_file_id: Optional[str] = None
+    file_id: str | None = None
+    file_size: int | None = None
+    mime_type: str | None = None
+    width: int | None = None
+    height: int | None = None
+    duration: int | None = None
+    thumbnail_file_id: str | None = None
 
 
 @dataclass
@@ -101,7 +105,7 @@ class MessageInfo:
 
     message_id: int
     channel_id: int
-    text: Optional[str]
+    text: str | None
     date: datetime
     views: int = 0
     forwards: int = 0
@@ -109,8 +113,8 @@ class MessageInfo:
     reactions: dict[str, int] = field(default_factory=dict)
     media: list[MediaInfo] = field(default_factory=list)
     is_forwarded: bool = False
-    forward_from_channel_id: Optional[int] = None
-    forward_from_message_id: Optional[int] = None
+    forward_from_channel_id: int | None = None
+    forward_from_message_id: int | None = None
 
 
 @dataclass
@@ -133,9 +137,9 @@ class ChannelInfo:
     title: str
     subscriber_count: int
     is_public: bool
-    description: Optional[str] = None
-    photo_url: Optional[str] = None
-    invite_link: Optional[str] = None
+    description: str | None = None
+    photo_url: str | None = None
+    invite_link: str | None = None
 
 
 class TelegramClient(ABC):
@@ -167,7 +171,7 @@ class TelegramClient(ABC):
         """
 
     @abstractmethod
-    async def get_channel(self, identifier: str) -> Optional[ChannelInfo]:
+    async def get_channel(self, identifier: str) -> ChannelInfo | None:
         """Get information about a channel.
 
         Args:
@@ -182,7 +186,7 @@ class TelegramClient(ABC):
         self,
         channel_id: int,
         limit: int = 100,
-        offset_date: Optional[datetime] = None,
+        offset_date: datetime | None = None,
         min_id: int = 0,
     ) -> list[MessageInfo]:
         """Get messages from a channel.
@@ -213,7 +217,7 @@ class TelethonClient(TelegramClient):
         """
         self.config = config
         self._connected = False
-        self._client: Optional["TelethonClientWrapper"] = None
+        self._client: "TelethonClientWrapper | None" = None
         self._initialize_client()
 
     def _initialize_client(self) -> None:
@@ -265,21 +269,21 @@ class TelethonClient(TelegramClient):
             await self._client.disconnect()
             self._connected = False
 
-    async def __aenter__(self) -> "TelethonClient":
+    async def __aenter__(self) -> Self:
         """Async context manager entry."""
         await self.connect()
         return self
 
     async def __aexit__(
         self,
-        exc_type: Optional[type],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[object],
+        exc_type: type | None,
+        exc_val: BaseException | None,
+        exc_tb: object | None,
     ) -> None:
         """Async context manager exit."""
         await self.disconnect()
 
-    async def get_channel(self, identifier: str) -> Optional[ChannelInfo]:
+    async def get_channel(self, identifier: str) -> ChannelInfo | None:
         """Get information about a channel.
 
         Args:
@@ -319,7 +323,7 @@ class TelethonClient(TelegramClient):
         self,
         channel_id: int,
         limit: int = 100,
-        offset_date: Optional[datetime] = None,
+        offset_date: datetime | None = None,
         min_id: int = 0,
     ) -> list[MessageInfo]:
         """Get messages from a channel.
@@ -357,7 +361,7 @@ class TelethonClient(TelegramClient):
         except Exception:
             return []
 
-    def _parse_message(self, message: object, channel_id: int) -> Optional[MessageInfo]:
+    def _parse_message(self, message: object, channel_id: int) -> MessageInfo | None:
         """Parse a Telethon message into MessageInfo.
 
         Args:
@@ -411,7 +415,7 @@ class TelethonClient(TelegramClient):
         except Exception:
             return None
 
-    def _parse_media(self, media: object) -> Optional[MediaInfo]:
+    def _parse_media(self, media: object) -> MediaInfo | None:
         """Parse Telethon media into MediaInfo.
 
         Args:

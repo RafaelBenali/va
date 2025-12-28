@@ -10,13 +10,17 @@ Requirements addressed:
 - REQ-NP-006: Handle Russian, English, Ukrainian, and other Cyrillic languages
 - REQ-NP-007: Rank news by configurable criteria
 - NFR-P-007: Metrics-only mode response time < 3 seconds
+
+Python 3.10+ Modernization (WS-6.3):
+- Uses X | None instead of Optional[X] for union types
 """
 
 import hashlib
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Any, Callable, Optional, Protocol
+from typing import Any, Protocol
 
 from sqlalchemy import text
 
@@ -26,7 +30,7 @@ from src.tnse.search.tokenizer import Tokenizer
 class CacheProtocol(Protocol):
     """Protocol for cache implementations."""
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Get a value from the cache."""
         ...
 
@@ -120,8 +124,8 @@ class SearchService:
         cache_ttl: Time-to-live for cached results in seconds (default: 300).
     """
 
-    session_factory: Callable
-    cache: Optional[CacheProtocol] = None
+    session_factory: Callable[..., Any]
+    cache: CacheProtocol | None = None
     tokenizer: Tokenizer = field(default_factory=Tokenizer)
     cache_ttl: int = 300
 

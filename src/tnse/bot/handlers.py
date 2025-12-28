@@ -3,10 +3,14 @@ TNSE Telegram Bot Command Handlers
 
 Provides command handlers for the Telegram bot interface.
 Includes /start, /help, /settings commands and access control.
+
+Python 3.10+ Modernization (WS-6.3):
+- Uses TypeAlias for type alias definitions
 """
 
+from collections.abc import Callable, Coroutine
 from functools import wraps
-from typing import Any, Callable, Coroutine
+from typing import Any, TypeAlias
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -17,8 +21,8 @@ from src.tnse.core.logging import get_logger
 logger = get_logger(__name__)
 
 
-# Type alias for handler functions
-HandlerFunc = Callable[
+# Type alias for handler functions (Python 3.10+ TypeAlias annotation)
+HandlerFunc: TypeAlias = Callable[
     [Update, ContextTypes.DEFAULT_TYPE],
     Coroutine[Any, Any, None]
 ]

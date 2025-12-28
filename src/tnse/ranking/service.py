@@ -11,12 +11,15 @@ Requirements addressed:
 - Sorting options: views, reactions, engagement, recency, combined
 - Configurable time window (default 24 hours)
 - Configurable weight for recency vs engagement
+
+Python 3.10+ Modernization (WS-6.3):
+- Uses match/case for enum-based dispatch
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 
@@ -88,7 +91,7 @@ class RankingService:
     def calculate_recency_factor(
         self,
         posted_at: datetime,
-        reference_time: Optional[datetime] = None,
+        reference_time: datetime | None = None,
     ) -> float:
         """Calculate the recency factor for a post.
 
@@ -165,7 +168,7 @@ class RankingService:
     def calculate_score_for_post(
         self,
         post_data: dict[str, Any],
-        reference_time: Optional[datetime] = None,
+        reference_time: datetime | None = None,
     ) -> float:
         """Calculate the combined score for a single post.
 
@@ -191,7 +194,7 @@ class RankingService:
         self,
         posts: list[dict[str, Any]],
         sort_mode: SortMode = SortMode.COMBINED,
-        reference_time: Optional[datetime] = None,
+        reference_time: datetime | None = None,
     ) -> list[RankedPost]:
         """Rank a collection of posts by the specified criteria.
 
@@ -240,16 +243,17 @@ class RankingService:
             )
             ranked_posts.append(ranked_post)
 
-        # Sort based on mode
-        if sort_mode == SortMode.COMBINED:
-            ranked_posts.sort(key=lambda post: post.combined_score, reverse=True)
-        elif sort_mode == SortMode.VIEWS:
-            ranked_posts.sort(key=lambda post: post.view_count, reverse=True)
-        elif sort_mode == SortMode.REACTIONS:
-            ranked_posts.sort(key=lambda post: post.reaction_score, reverse=True)
-        elif sort_mode == SortMode.ENGAGEMENT:
-            ranked_posts.sort(key=lambda post: post.relative_engagement, reverse=True)
-        elif sort_mode == SortMode.RECENCY:
-            ranked_posts.sort(key=lambda post: post.posted_at, reverse=True)
+        # Sort based on mode using match/case (Python 3.10+)
+        match sort_mode:
+            case SortMode.COMBINED:
+                ranked_posts.sort(key=lambda post: post.combined_score, reverse=True)
+            case SortMode.VIEWS:
+                ranked_posts.sort(key=lambda post: post.view_count, reverse=True)
+            case SortMode.REACTIONS:
+                ranked_posts.sort(key=lambda post: post.reaction_score, reverse=True)
+            case SortMode.ENGAGEMENT:
+                ranked_posts.sort(key=lambda post: post.relative_engagement, reverse=True)
+            case SortMode.RECENCY:
+                ranked_posts.sort(key=lambda post: post.posted_at, reverse=True)
 
         return ranked_posts

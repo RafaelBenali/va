@@ -11,11 +11,13 @@ Render.com Compatibility:
 - Supports DATABASE_URL for PostgreSQL connection string
 - Supports REDIS_URL for Redis connection string
 - URL-based configuration takes precedence over individual variables
+
+Python 3.10+ Modernization (WS-6.3):
+- Uses X | None instead of Optional[X] for union types
 """
 
 import os
 from functools import lru_cache
-from typing import Optional
 from urllib.parse import urlparse, unquote
 
 from pydantic import Field, field_validator, model_validator
@@ -97,7 +99,7 @@ class RedisSettings(BaseSettings):
     host: str = Field(default="localhost", description="Redis host")
     port: int = Field(default=6379, description="Redis port")
     db: int = Field(default=0, description="Redis database number")
-    password: Optional[str] = Field(default=None, description="Redis password")
+    password: str | None = Field(default=None, description="Redis password")
     use_tls: bool = Field(default=False, description="Use TLS for Redis connection")
 
     @model_validator(mode="before")
@@ -168,11 +170,11 @@ class TelegramSettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="TELEGRAM_", extra="ignore")
 
-    bot_token: Optional[str] = Field(default=None, description="Telegram bot token")
-    api_id: Optional[str] = Field(default=None, description="Telegram API ID")
-    api_hash: Optional[str] = Field(default=None, description="Telegram API hash")
-    phone: Optional[str] = Field(default=None, description="Telegram phone number")
-    webhook_url: Optional[str] = Field(
+    bot_token: str | None = Field(default=None, description="Telegram bot token")
+    api_id: str | None = Field(default=None, description="Telegram API ID")
+    api_hash: str | None = Field(default=None, description="Telegram API hash")
+    phone: str | None = Field(default=None, description="Telegram phone number")
+    webhook_url: str | None = Field(
         default=None,
         description="Webhook URL for production (e.g., https://tnse-web.onrender.com/webhook)"
     )
@@ -185,13 +187,13 @@ class LLMSettings(BaseSettings):
     provider: str = Field(
         default="openai", alias="LLM_PROVIDER", description="LLM provider (openai, anthropic)"
     )
-    openai_api_key: Optional[str] = Field(
+    openai_api_key: str | None = Field(
         default=None, alias="OPENAI_API_KEY", description="OpenAI API key"
     )
     openai_model: str = Field(
         default="gpt-4-turbo-preview", alias="OPENAI_MODEL", description="OpenAI model"
     )
-    anthropic_api_key: Optional[str] = Field(
+    anthropic_api_key: str | None = Field(
         default=None, alias="ANTHROPIC_API_KEY", description="Anthropic API key"
     )
     anthropic_model: str = Field(
@@ -259,7 +261,7 @@ class Settings(BaseSettings):
     search_cache_ttl: int = Field(default=300, alias="SEARCH_CACHE_TTL")
 
     # Allowed Telegram users (comma-separated list)
-    allowed_telegram_users: Optional[str] = Field(
+    allowed_telegram_users: str | None = Field(
         default=None, validation_alias="ALLOWED_TELEGRAM_USERS"
     )
 
