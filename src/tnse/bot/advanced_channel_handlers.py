@@ -17,6 +17,7 @@ from collections.abc import Callable, Coroutine
 from typing import Any
 
 from telegram import Update
+from telegram.constants import ChatAction
 from telegram.ext import ContextTypes
 
 from src.tnse.core.logging import get_logger
@@ -188,8 +189,13 @@ async def import_command(
         context: The callback context containing bot_data.
     """
     user_id = update.effective_user.id if update.effective_user else None
+    chat_id = update.effective_chat.id if update.effective_chat else None
 
     logger.info("Import command called", user_id=user_id)
+
+    # Send typing indicator to show progress
+    if chat_id:
+        await context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
 
     # Check for file attachment
     if not update.message.document:

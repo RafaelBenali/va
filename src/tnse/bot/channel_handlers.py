@@ -16,6 +16,7 @@ from collections.abc import Callable, Coroutine
 from typing import Any
 
 from telegram import Update
+from telegram.constants import ChatAction
 from telegram.ext import ContextTypes
 
 from src.tnse.core.logging import get_logger
@@ -95,6 +96,7 @@ async def addchannel_command(
         context: The callback context containing bot_data.
     """
     user_id = update.effective_user.id if update.effective_user else None
+    chat_id = update.effective_chat.id if update.effective_chat else None
 
     # Check for username argument
     if not context.args:
@@ -114,6 +116,10 @@ async def addchannel_command(
         channel_identifier=channel_identifier,
         username=username
     )
+
+    # Send typing indicator to show progress during validation
+    if chat_id:
+        await context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
 
     # Get channel service and database session from bot_data
     channel_service = context.bot_data.get("channel_service")

@@ -148,28 +148,41 @@ async def help_command(
     """
     help_message = """TNSE Bot - Available Commands
 
+Quick Start:
+1. Add a channel: /addchannel @telegram
+2. Search for news: /search breaking news
+3. Export results: /export csv
+
 Basic Commands:
 /start - Start the bot and see welcome message
-/help - Show this help message
+/help (/h) - Show this help message
 /settings - View and configure bot settings
 
 Channel Management:
 /addchannel @username - Add a channel to monitor
+  Example: /addchannel @telegram or /addchannel https://t.me/telegram
 /removechannel @username - Remove a channel from monitoring
-/channels - List all monitored channels
+/channels (/ch) - List all monitored channels
 /channelinfo @username - Show channel details and health status
 
 Search Commands:
-/search <query> - Search for news by keyword (with pagination)
-/export [csv|json] - Export search results to file
+/search (/s) <query> - Search for news by keyword
+  Example: /search corruption scandal
+/export (/e) [csv|json] - Export search results to file
+  Example: /export json
 
 Topic Management:
 /savetopic <name> - Save current search configuration
-/topics - List your saved topics
+  Example: /savetopic my_topic
+/topics (/t) - List your saved topics
 /topic <name> - Run a saved topic search
 /deletetopic <name> - Delete a saved topic
 /templates - Show pre-built topic templates
 /usetemplate <name> - Run a pre-built template search
+
+Advanced:
+/import - Bulk import channels from file (CSV, JSON, TXT)
+/health - Show health status of all channels
 
 For more information, visit the documentation or contact the bot administrator."""
 

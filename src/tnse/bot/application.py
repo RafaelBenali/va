@@ -80,28 +80,30 @@ def create_bot_application(config: BotConfig) -> Application:
     # Register command handlers with access control
     # Wrap handlers with require_access for protected commands
     application.add_handler(CommandHandler("start", require_access(start_command)))
-    application.add_handler(CommandHandler("help", require_access(help_command)))
+    # Help command with /h alias for quick access
+    application.add_handler(CommandHandler(["help", "h"], require_access(help_command)))
     application.add_handler(CommandHandler("settings", require_access(settings_command)))
 
     # Channel management commands (WS-1.5)
     application.add_handler(CommandHandler("addchannel", require_access(addchannel_command)))
     application.add_handler(CommandHandler("removechannel", require_access(removechannel_command)))
-    application.add_handler(CommandHandler("channels", require_access(channels_command)))
+    # Channels list with /ch alias for quick access
+    application.add_handler(CommandHandler(["channels", "ch"], require_access(channels_command)))
     application.add_handler(CommandHandler("channelinfo", require_access(channelinfo_command)))
 
     # Advanced channel management commands (WS-3.2)
     application.add_handler(CommandHandler("import", require_access(import_command)))
     application.add_handler(CommandHandler("health", require_access(health_command)))
 
-    # Search commands (WS-2.4)
-    application.add_handler(CommandHandler("search", require_access(search_command)))
+    # Search commands (WS-2.4) with /s alias for quick access
+    application.add_handler(CommandHandler(["search", "s"], require_access(search_command)))
 
-    # Export commands (WS-2.5)
-    application.add_handler(CommandHandler("export", require_access(export_command)))
+    # Export commands (WS-2.5) with /e alias for quick access
+    application.add_handler(CommandHandler(["export", "e"], require_access(export_command)))
 
-    # Topic management commands (WS-3.1)
+    # Topic management commands (WS-3.1) with /t alias for quick access
     application.add_handler(CommandHandler("savetopic", require_access(savetopic_command)))
-    application.add_handler(CommandHandler("topics", require_access(topics_command)))
+    application.add_handler(CommandHandler(["topics", "t"], require_access(topics_command)))
     application.add_handler(CommandHandler("topic", require_access(topic_command)))
     application.add_handler(CommandHandler("deletetopic", require_access(deletetopic_command)))
     application.add_handler(CommandHandler("templates", require_access(templates_command)))

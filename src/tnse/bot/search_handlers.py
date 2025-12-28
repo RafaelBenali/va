@@ -25,6 +25,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Any
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.constants import ChatAction
 from telegram.ext import ContextTypes
 
 from src.tnse.core.logging import get_logger
@@ -355,6 +356,7 @@ async def search_command(
         context: The callback context containing bot_data.
     """
     user_id = update.effective_user.id if update.effective_user else None
+    chat_id = update.effective_chat.id if update.effective_chat else None
 
     # Check for query argument
     if not context.args:
@@ -373,6 +375,10 @@ async def search_command(
         user_id=user_id,
         query=query,
     )
+
+    # Send typing indicator to show progress
+    if chat_id:
+        await context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
 
     # Get search service from bot_data
     search_service = context.bot_data.get("search_service")
