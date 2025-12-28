@@ -925,7 +925,8 @@ Found 47 results (showing 1-5)
 | **Dependencies** | WS-6.1 |
 | **Parallel With** | WS-6.4 |
 | **Effort** | M |
-| **Status** | Not Started |
+| **Status** | In Progress |
+| **Started** | 2025-12-28 |
 
 **Tasks:**
 - [ ] Update to Python 3.12+ if applicable
@@ -1034,6 +1035,132 @@ Found 47 results (showing 1-5)
 
 ---
 
+### Batch 6.4 - Telegram Bot Evaluation and Enhancement
+
+---
+
+#### WS-6.7: Telegram Bot Implementation Audit
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-6.7 |
+| **Name** | Telegram Bot Implementation Evaluation |
+| **Description** | Comprehensive review of current bot implementation against best practices |
+| **Dependencies** | WS-6.1, WS-6.2 |
+| **Parallel With** | WS-6.8 |
+| **Effort** | M |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Review python-telegram-bot/aiogram usage patterns
+- [ ] Evaluate current command handler architecture
+- [ ] Audit conversation flow and state management
+- [ ] Review error handling in bot commands
+- [ ] Assess bot response formatting and UX
+- [ ] Evaluate inline keyboard implementations
+- [ ] Review callback query handling patterns
+- [ ] Audit message size and rate limit handling
+- [ ] Review webhook vs polling configuration
+
+**Acceptance Criteria:**
+- [ ] Complete audit report of current bot implementation
+- [ ] List of improvement opportunities identified
+- [ ] Priority ranking of enhancements
+- [ ] Compatibility assessment with latest library versions
+
+---
+
+#### WS-6.8: Bot Library Modernization
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-6.8 |
+| **Name** | Telegram Bot Library Update |
+| **Description** | Update bot library to latest stable and adopt new features |
+| **Dependencies** | WS-6.1, WS-6.2 |
+| **Parallel With** | WS-6.7 |
+| **Effort** | M |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Update to latest python-telegram-bot or aiogram version
+- [ ] Migrate deprecated API calls to new patterns
+- [ ] Adopt new async/await patterns if applicable
+- [ ] Update handler decorators to current syntax
+- [ ] Review and update bot configuration approach
+- [ ] Update application lifecycle management
+- [ ] Test all commands after library update
+- [ ] Document breaking changes and migrations
+
+**Acceptance Criteria:**
+- [ ] Bot library at December 2025 stable version
+- [ ] All deprecated patterns replaced
+- [ ] All commands functioning after update
+- [ ] Migration guide documented
+
+---
+
+#### WS-6.9: Bot Feature Enhancement
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-6.9 |
+| **Name** | Bot Functionality Improvements |
+| **Description** | Implement improvements identified in audit |
+| **Dependencies** | WS-6.7, WS-6.8 |
+| **Parallel With** | None |
+| **Effort** | M |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Improve command response formatting
+- [ ] Enhance inline keyboard navigation
+- [ ] Add command aliases for common operations
+- [ ] Improve error messages and user feedback
+- [ ] Optimize pagination for search results
+- [ ] Add progress indicators for long operations
+- [ ] Improve help command with examples
+- [ ] Add input validation improvements
+- [ ] Review and enhance accessibility of responses
+
+**Acceptance Criteria:**
+- [ ] Improved user experience documented
+- [ ] All enhancements tested
+- [ ] User-facing changes documented in help
+- [ ] Performance maintained or improved
+
+---
+
+#### WS-6.10: Bot Testing and Documentation
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-6.10 |
+| **Name** | Bot Testing Suite and Documentation Update |
+| **Description** | Comprehensive testing of bot functionality and documentation refresh |
+| **Dependencies** | WS-6.9 |
+| **Parallel With** | None |
+| **Effort** | S |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Create/update unit tests for bot handlers
+- [ ] Add integration tests for bot commands
+- [ ] Test bot behavior with rate limits
+- [ ] Test error scenarios and recovery
+- [ ] Update bot command documentation
+- [ ] Update user guide with new features
+- [ ] Document bot configuration options
+- [ ] Create bot troubleshooting guide
+
+**Acceptance Criteria:**
+- [ ] Test coverage for all bot commands
+- [ ] Integration tests passing
+- [ ] Documentation fully updated
+- [ ] Troubleshooting guide complete
+
+---
+
 ### Phase 6 Gate (Modernization Complete)
 
 | Criterion | Target |
@@ -1055,6 +1182,10 @@ Found 47 results (showing 1-5)
 | WS-6.4 | API and Database Review | WS-6.1 | M |
 | WS-6.5 | Infrastructure Modernization | WS-6.3, WS-6.4 | S |
 | WS-6.6 | Documentation Refresh | WS-6.3, WS-6.4 | S |
+| WS-6.7 | Telegram Bot Implementation Audit | WS-6.1, WS-6.2 | M |
+| WS-6.8 | Bot Library Modernization | WS-6.1, WS-6.2 | M |
+| WS-6.9 | Bot Feature Enhancement | WS-6.7, WS-6.8 | M |
+| WS-6.10 | Bot Testing and Documentation | WS-6.9 | S |
 
 ---
 
@@ -1067,8 +1198,8 @@ Found 47 results (showing 1-5)
 | Phase 3: Enhanced Features | 2 weeks | Topics, templates, polish |
 | Phase 4: Render.com Deployment | 1 week | **PRODUCTION** - Bot deployed on Render.com |
 | Phase 5: LLM (Optional) | 2 weeks | Semantic analysis |
-| Phase 6: Codebase Modernization | 1-2 weeks | December 2025 technology refresh |
-| **Total (with Modernization)** | **12-13 weeks** | Full implementation with modern stack |
+| Phase 6: Codebase Modernization | 2-3 weeks | December 2025 technology refresh + Bot enhancement |
+| **Total (with Modernization)** | **13-14 weeks** | Full implementation with modern stack and enhanced bot |
  
 
 ## Critical Path
@@ -1120,6 +1251,15 @@ Found 47 results (showing 1-5)
         |
         v
 [WS-6.5: Infrastructure] + [WS-6.6: Documentation]
+        |
+        v
+[WS-6.7: Bot Audit] + [WS-6.8: Bot Library Update]
+        |
+        v
+[WS-6.9: Bot Enhancement]
+        |
+        v
+[WS-6.10: Bot Testing & Docs]
         |
         v
   [MODERNIZATION COMPLETE]
