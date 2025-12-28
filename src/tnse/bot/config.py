@@ -3,10 +3,12 @@ TNSE Telegram Bot Configuration
 
 Provides configuration management for the Telegram bot.
 Integrates with the main application settings system.
+
+Python 3.10+ Modernization (WS-6.8):
+- Uses X | None instead of Optional[X] for union types
 """
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 from src.tnse.core.config import get_settings
 
@@ -35,7 +37,7 @@ class BotConfig:
     token: str
     allowed_users: list[int] = field(default_factory=list)
     polling_mode: bool = True
-    webhook_url: Optional[str] = None
+    webhook_url: str | None = None
 
     def __post_init__(self) -> None:
         """Validate configuration after initialization."""

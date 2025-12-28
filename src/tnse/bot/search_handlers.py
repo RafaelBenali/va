@@ -13,12 +13,16 @@ Requirements addressed:
 - Metrics displayed clearly
 - Links work
 - Telegram message length limits (4096 chars)
+
+Python 3.10+ Modernization (WS-6.8):
+- Uses X | None instead of Optional[X] for union types
 """
 
 import re
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
-from typing import Any, Callable, Coroutine, Optional
+from typing import Any
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
@@ -91,7 +95,7 @@ class SearchFormatter:
     def format_time_ago(
         self,
         published_at: datetime,
-        reference_time: Optional[datetime] = None,
+        reference_time: datetime | None = None,
     ) -> str:
         """Format time as relative (e.g., 2h ago, 30m ago).
 
@@ -130,7 +134,7 @@ class SearchFormatter:
         else:
             return "just now"
 
-    def format_reactions(self, reactions: Optional[dict[str, int]]) -> str:
+    def format_reactions(self, reactions: dict[str, int] | None) -> str:
         """Format reaction counts with emoji labels.
 
         Args:
@@ -185,8 +189,8 @@ class SearchFormatter:
         self,
         result: SearchResult,
         index: int,
-        reference_time: Optional[datetime] = None,
-        reactions: Optional[dict[str, int]] = None,
+        reference_time: datetime | None = None,
+        reactions: dict[str, int] | None = None,
     ) -> str:
         """Format a single search result for display.
 
@@ -236,8 +240,8 @@ class SearchFormatter:
         total_count: int,
         page: int,
         page_size: int,
-        reference_time: Optional[datetime] = None,
-        reactions_map: Optional[dict[str, dict[str, int]]] = None,
+        reference_time: datetime | None = None,
+        reactions_map: dict[str, dict[str, int]] | None = None,
     ) -> str:
         """Format a page of search results.
 

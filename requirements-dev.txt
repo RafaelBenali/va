@@ -1,5 +1,5 @@
 # Development dependencies for TNSE
-# Updated for December 2025 - WS-6.1 Dependency Modernization
+# Updated for December 2025 - WS-6.1 and WS-6.8 Dependency Modernization
 -r requirements.txt
 
 # Testing
@@ -16,7 +16,9 @@ isort>=5.13.0
 # Git Hooks
 pre-commit>=4.0.0
 
-# Telegram MTProto (optional for WS-1.4+)
+# Telegram MTProto (WS-6.8: Updated for December 2025 compatibility)
+# Version 1.37+ required for stable MTProto layer support
+# Version 1.42+ recommended for Python 3.14 compatibility and scheme layer 216
 telethon>=1.37.0
 
 # LLM (optional for WS-5.1+)

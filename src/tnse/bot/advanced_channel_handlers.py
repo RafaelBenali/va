@@ -13,7 +13,8 @@ import csv
 import json
 import re
 from io import StringIO
-from typing import Any, Callable, Coroutine, Optional
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from telegram import Update
 from telegram.ext import ContextTypes

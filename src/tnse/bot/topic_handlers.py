@@ -18,7 +18,8 @@ Requirements addressed:
 """
 
 from datetime import datetime, timezone
-from typing import Any, Callable, Coroutine, Optional
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes

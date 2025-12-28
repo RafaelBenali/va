@@ -12,7 +12,8 @@ Commands:
 """
 
 import re
-from typing import Any, Callable, Coroutine, Optional
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from telegram import Update
 from telegram.ext import ContextTypes
