@@ -10,7 +10,7 @@
 #   Render.com:  Uses production stage by default
 # =============================================================================
 
-FROM python:3.10-slim as base
+FROM python:3.12-slim as base
 
 # Default port - Render.com sets PORT environment variable
 ENV PORT=8000

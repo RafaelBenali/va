@@ -1,6 +1,8 @@
 # =============================================================================
 # TNSE - Telegram News Search Engine
 # Continuous Integration Workflow
+#
+# Updated for December 2025 (WS-6.5 Infrastructure Modernization)
 # =============================================================================
 # Runs on pull requests and pushes to main branch.
 # Performs linting, type checking, and testing.
@@ -17,7 +19,7 @@ on:
       - main
 
 env:
-  PYTHON_VERSION: "3.10"
+  PYTHON_VERSION: "3.12"
   POSTGRES_DB: tnse_test
   POSTGRES_USER: tnse_test
   POSTGRES_PASSWORD: tnse_test_password
@@ -102,7 +104,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:14-alpine
+        image: postgres:16-alpine
         env:
           POSTGRES_DB: ${{ env.POSTGRES_DB }}
           POSTGRES_USER: ${{ env.POSTGRES_USER }}
@@ -183,7 +185,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: false

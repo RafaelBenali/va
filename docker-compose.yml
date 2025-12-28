@@ -1,8 +1,9 @@
-version: "3.8"
-
 # =============================================================================
 # TNSE - Telegram News Search Engine
 # Docker Compose Configuration for Local Development
+#
+# Compose V2 syntax - no version key required
+# Updated for December 2025 (WS-6.5 Infrastructure Modernization)
 # =============================================================================
 
 services:
@@ -10,7 +11,7 @@ services:
   # PostgreSQL Database
   # ---------------------------------------------------------------------------
   postgres:
-    image: postgres:14-alpine
+    image: postgres:16-alpine
     container_name: tnse_postgres
     restart: unless-stopped
     environment:
