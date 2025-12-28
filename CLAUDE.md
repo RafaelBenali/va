@@ -15,9 +15,9 @@ A news aggregation and search engine for public Telegram channels. The Telegram 
 - Export search results to CSV/JSON
 
 ### Technology Stack
-- **Backend**: Python 3.10+ with FastAPI
+- **Backend**: Python 3.12+ with FastAPI
 - **Database**: PostgreSQL 14+
-- **Cache/Queue**: Redis
+- **Cache/Queue**: Redis 6+
 - **Task Queue**: Celery with Redis
 - **Containerization**: Docker, Docker Compose
 
@@ -82,10 +82,41 @@ tests/
 ## Coding Standards
 
 ### General
-- Use Python 3.10+ features
+- Use Python 3.12+ features
 - Follow PEP 8 style guide (enforced by ruff, black, isort)
 - Type hints required for all functions
 - Docstrings required for public functions and classes
+
+### Modern Python Patterns (3.12+)
+
+This project uses modern Python syntax introduced in Python 3.10-3.12:
+
+**Union Types (PEP 604):**
+- Use `X | None` instead of `Optional[X]`
+- Example: `def get_user(user_id: int) -> User | None`
+
+**TypeAlias (PEP 613):**
+- Use explicit `TypeAlias` annotation for type definitions
+- Example: `HandlerFunc: TypeAlias = Callable[[Update, Context], Coroutine[Any, Any, None]]`
+
+**Match/Case Pattern Matching (PEP 634):**
+- Use match/case for enum-based dispatch and structural pattern matching
+- Example:
+  ```python
+  match sort_mode:
+      case SortMode.VIEWS:
+          results.sort(key=lambda r: r.view_count)
+      case SortMode.COMBINED:
+          results.sort(key=lambda r: r.combined_score)
+  ```
+
+**Self Type (PEP 673):**
+- Use `Self` for methods returning the instance type
+- Example: `def __aenter__(self) -> Self`
+
+**Collections.abc Imports:**
+- Import abstract base classes from `collections.abc`
+- Example: `from collections.abc import Callable, Coroutine`
 
 ### Variable Naming
 - Never use single-letter variable names

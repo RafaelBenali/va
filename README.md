@@ -44,8 +44,10 @@ No web frontend needed - the Telegram bot is the entire user interface.
 
 ### Prerequisites
 
-- Python 3.10+
-- Docker and Docker Compose
+- Python 3.12+ (Python 3.13 recommended)
+- PostgreSQL 14+
+- Redis 6+
+- Docker and Docker Compose (for containerized deployment)
 - Telegram Bot Token (from [@BotFather](https://t.me/BotFather))
 - Telegram API credentials (from [my.telegram.org](https://my.telegram.org))
 

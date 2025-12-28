@@ -21,7 +21,7 @@ This guide covers deploying the Telegram News Search Engine (TNSE) bot to produc
 
 ### Required Software
 
-- Python 3.10 or higher
+- Python 3.12 or higher (Python 3.13 recommended)
 - PostgreSQL 14 or higher
 - Redis 6 or higher
 - Docker and Docker Compose (for containerized deployment)

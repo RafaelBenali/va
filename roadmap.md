@@ -994,7 +994,8 @@ Found 47 results (showing 1-5)
 | **Dependencies** | WS-6.3, WS-6.4 |
 | **Parallel With** | WS-6.6 |
 | **Effort** | S |
-| **Status** | Not Started |
+| **Status** | In Progress |
+| **Started** | 2025-12-28 |
 
 **Tasks:**
 - [ ] Update Docker base images to latest stable
@@ -1022,7 +1023,8 @@ Found 47 results (showing 1-5)
 | **Dependencies** | WS-6.3, WS-6.4 |
 | **Parallel With** | WS-6.5 |
 | **Effort** | S |
-| **Status** | Not Started |
+| **Status** | In Progress |
+| **Started** | 2025-12-28 |
 
 **Tasks:**
 - [ ] Update CLAUDE.md with any new patterns
