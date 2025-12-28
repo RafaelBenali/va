@@ -1157,7 +1157,8 @@ Found 47 results (showing 1-5)
 | **Dependencies** | WS-6.9 |
 | **Parallel With** | None |
 | **Effort** | S |
-| **Status** | Not Started |
+| **Status** | In Progress |
+| **Started** | 2025-12-29 |
 
 **Tasks:**
 - [ ] Create/update unit tests for bot handlers
