@@ -957,24 +957,25 @@ Found 47 results (showing 1-5)
 | **Dependencies** | WS-6.1 |
 | **Parallel With** | WS-6.3 |
 | **Effort** | M |
-| **Status** | In Progress |
+| **Status** | Complete |
 | **Started** | 2025-12-28 |
+| **Completed** | 2025-12-28 |
 
 **Tasks:**
-- [ ] Review FastAPI router organization
-- [ ] Update Pydantic models to v2 patterns
-- [ ] Audit database indexes for query patterns
-- [ ] Review and optimize N+1 query patterns
-- [ ] Evaluate PostgreSQL 16+ features for applicability
-- [ ] Review Redis usage patterns and key expiry
-- [ ] Audit Celery task patterns and error handling
-- [ ] Review connection pooling configuration
+- [x] Review FastAPI router organization
+- [x] Update Pydantic models to v2 patterns
+- [x] Audit database indexes for query patterns
+- [x] Review and optimize N+1 query patterns
+- [x] Evaluate PostgreSQL 16+ features for applicability
+- [x] Review Redis usage patterns and key expiry
+- [x] Audit Celery task patterns and error handling
+- [x] Review connection pooling configuration
 
 **Acceptance Criteria:**
-- [ ] API response times within targets
-- [ ] Database queries optimized
-- [ ] Connection pools properly configured
-- [ ] Celery tasks properly retrying on failure
+- [x] API response times within targets
+- [x] Database queries optimized
+- [x] Connection pools properly configured
+- [x] Celery tasks properly retrying on failure
 
 ---
 
@@ -1091,12 +1092,14 @@ Found 47 results (showing 1-5)
 - [ ] Update handler decorators to current syntax
 - [ ] Review and update bot configuration approach
 - [ ] Update application lifecycle management
+- [ ] Verify MTProto API RSA public key connection for secure server authentication
 - [ ] Test all commands after library update
 - [ ] Document breaking changes and migrations
 
 **Acceptance Criteria:**
 - [ ] Bot library at December 2025 stable version
 - [ ] All deprecated patterns replaced
+- [ ] MTProto RSA public key verification properly configured
 - [ ] All commands functioning after update
 - [ ] Migration guide documented
 
