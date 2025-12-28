@@ -84,6 +84,7 @@ def create_test_update(
     update.message = message
     update.effective_user = message.from_user
     update.effective_message = message
+    update.effective_chat = message.chat
     update.callback_query = None
     return update
 
@@ -94,6 +95,8 @@ def create_test_context(bot_data: Optional[dict] = None) -> ContextTypes.DEFAULT
     context.bot_data = bot_data or {}
     context.user_data = {}
     context.args = []
+    # Mock the bot.send_chat_action for typing indicators
+    context.bot.send_chat_action = AsyncMock()
     return context
 
 

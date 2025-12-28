@@ -372,6 +372,7 @@ class TestSearchCommand:
 
         update = MagicMock()
         update.effective_user.id = 123456
+        update.effective_chat.id = 123456
         update.message.reply_text = AsyncMock()
 
         now = datetime.now(timezone.utc)
@@ -398,6 +399,7 @@ class TestSearchCommand:
         context.bot_data = {
             "search_service": mock_search_service,
         }
+        context.bot.send_chat_action = AsyncMock()
 
         await search_command(update, context)
 
@@ -416,6 +418,7 @@ class TestSearchCommand:
 
         update = MagicMock()
         update.effective_user.id = 123456
+        update.effective_chat.id = 123456
         update.message.reply_text = AsyncMock()
 
         now = datetime.now(timezone.utc)
@@ -443,6 +446,7 @@ class TestSearchCommand:
         context.bot_data = {
             "search_service": mock_search_service,
         }
+        context.bot.send_chat_action = AsyncMock()
 
         await search_command(update, context)
 
@@ -462,6 +466,7 @@ class TestSearchCommand:
 
         update = MagicMock()
         update.effective_user.id = 123456
+        update.effective_chat.id = 123456
         update.message.reply_text = AsyncMock()
 
         mock_search_service = AsyncMock()
@@ -472,6 +477,7 @@ class TestSearchCommand:
         context.bot_data = {
             "search_service": mock_search_service,
         }
+        context.bot.send_chat_action = AsyncMock()
 
         await search_command(update, context)
 
@@ -487,11 +493,13 @@ class TestSearchCommand:
 
         update = MagicMock()
         update.effective_user.id = 123456
+        update.effective_chat.id = 123456
         update.message.reply_text = AsyncMock()
 
         context = MagicMock()
         context.args = ["test"]
         context.bot_data = {}  # No search service
+        context.bot.send_chat_action = AsyncMock()
 
         await search_command(update, context)
 

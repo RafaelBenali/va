@@ -55,6 +55,7 @@ class TestAddChannelCommand:
 
         update = MagicMock()
         update.effective_user.id = 123456
+        update.effective_chat.id = 123456
         update.message.reply_text = AsyncMock()
 
         # Mock database session factory
@@ -68,6 +69,7 @@ class TestAddChannelCommand:
             "channel_service": MagicMock(),
             "db_session_factory": MagicMock(return_value=mock_session),
         }
+        context.bot.send_chat_action = AsyncMock()
 
         # Mock channel service to return invalid result
         mock_validation_result = MagicMock()
@@ -93,6 +95,7 @@ class TestAddChannelCommand:
 
         update = MagicMock()
         update.effective_user.id = 123456
+        update.effective_chat.id = 123456
         update.message.reply_text = AsyncMock()
 
         # Create mock channel info
@@ -121,6 +124,7 @@ class TestAddChannelCommand:
             "channel_service": MagicMock(),
             "db_session_factory": MagicMock(return_value=mock_session),
         }
+        context.bot.send_chat_action = AsyncMock()
         context.bot_data["channel_service"].validate_channel = AsyncMock(
             return_value=mock_validation_result
         )
@@ -141,6 +145,7 @@ class TestAddChannelCommand:
 
         update = MagicMock()
         update.effective_user.id = 123456
+        update.effective_chat.id = 123456
         update.message.reply_text = AsyncMock()
 
         # Create mock channel info
@@ -165,6 +170,7 @@ class TestAddChannelCommand:
             "channel_service": MagicMock(),
             "db_session_factory": MagicMock(return_value=mock_session),
         }
+        context.bot.send_chat_action = AsyncMock()
         context.bot_data["channel_service"].validate_channel = AsyncMock(
             return_value=mock_validation_result
         )

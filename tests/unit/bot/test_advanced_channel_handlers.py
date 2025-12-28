@@ -32,11 +32,13 @@ class TestImportCommand:
 
         update = MagicMock()
         update.effective_user.id = 123456
+        update.effective_chat.id = 123456
         update.message.reply_text = AsyncMock()
         update.message.document = None  # No document attached
 
         context = MagicMock()
         context.bot_data = {"config": MagicMock(allowed_users=[])}
+        context.bot.send_chat_action = AsyncMock()
 
         await import_command(update, context)
 
@@ -54,6 +56,7 @@ class TestImportCommand:
 
         update = MagicMock()
         update.effective_user.id = 123456
+        update.effective_chat.id = 123456
         update.message.reply_text = AsyncMock()
 
         # Mock CSV document
@@ -94,6 +97,7 @@ class TestImportCommand:
             "channel_service": MagicMock(),
             "db_session_factory": MagicMock(return_value=mock_session),
         }
+        context.bot.send_chat_action = AsyncMock()
         context.bot_data["channel_service"].validate_channel = AsyncMock(
             return_value=mock_validation_result
         )
@@ -115,6 +119,7 @@ class TestImportCommand:
 
         update = MagicMock()
         update.effective_user.id = 123456
+        update.effective_chat.id = 123456
         update.message.reply_text = AsyncMock()
 
         # Mock JSON document
@@ -156,6 +161,7 @@ class TestImportCommand:
             "channel_service": MagicMock(),
             "db_session_factory": MagicMock(return_value=mock_session),
         }
+        context.bot.send_chat_action = AsyncMock()
         context.bot_data["channel_service"].validate_channel = AsyncMock(
             return_value=mock_validation_result
         )
@@ -176,6 +182,7 @@ class TestImportCommand:
 
         update = MagicMock()
         update.effective_user.id = 123456
+        update.effective_chat.id = 123456
         update.message.reply_text = AsyncMock()
 
         # Mock TXT document
@@ -216,6 +223,7 @@ class TestImportCommand:
             "channel_service": MagicMock(),
             "db_session_factory": MagicMock(return_value=mock_session),
         }
+        context.bot.send_chat_action = AsyncMock()
         context.bot_data["channel_service"].validate_channel = AsyncMock(
             return_value=mock_validation_result
         )
@@ -236,6 +244,7 @@ class TestImportCommand:
 
         update = MagicMock()
         update.effective_user.id = 123456
+        update.effective_chat.id = 123456
         update.message.reply_text = AsyncMock()
 
         # Mock CSV document with multiple channels
@@ -285,6 +294,7 @@ class TestImportCommand:
             "channel_service": mock_channel_service,
             "db_session_factory": MagicMock(return_value=mock_session),
         }
+        context.bot.send_chat_action = AsyncMock()
 
         await import_command(update, context)
 
@@ -298,6 +308,7 @@ class TestImportCommand:
 
         update = MagicMock()
         update.effective_user.id = 123456
+        update.effective_chat.id = 123456
         update.message.reply_text = AsyncMock()
 
         # Mock CSV document with multiple channels
@@ -347,6 +358,7 @@ class TestImportCommand:
             "channel_service": mock_channel_service,
             "db_session_factory": MagicMock(return_value=mock_session),
         }
+        context.bot.send_chat_action = AsyncMock()
 
         await import_command(update, context)
 
@@ -364,6 +376,7 @@ class TestImportCommand:
 
         update = MagicMock()
         update.effective_user.id = 123456
+        update.effective_chat.id = 123456
         update.message.reply_text = AsyncMock()
 
         # Mock CSV document
@@ -407,6 +420,7 @@ class TestImportCommand:
             "channel_service": mock_channel_service,
             "db_session_factory": MagicMock(return_value=mock_session),
         }
+        context.bot.send_chat_action = AsyncMock()
 
         await import_command(update, context)
 
@@ -424,6 +438,7 @@ class TestImportCommand:
 
         update = MagicMock()
         update.effective_user.id = 123456
+        update.effective_chat.id = 123456
         update.message.reply_text = AsyncMock()
 
         # Mock unsupported document type
@@ -434,6 +449,7 @@ class TestImportCommand:
 
         context = MagicMock()
         context.bot_data = {"config": MagicMock(allowed_users=[])}
+        context.bot.send_chat_action = AsyncMock()
 
         await import_command(update, context)
 
