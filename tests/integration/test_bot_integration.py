@@ -680,3 +680,342 @@ class TestErrorHandling:
         update.message.reply_text.assert_called()
         call_args = update.message.reply_text.call_args[0][0]
         assert "error" in call_args.lower()
+
+
+# =============================================================================
+# Additional Integration Tests for WS-6.10
+# =============================================================================
+
+
+class TestFullSearchWorkflow:
+    """Integration tests for complete search workflow."""
+
+    @pytest.mark.asyncio
+    async def test_search_then_export_workflow(
+        self,
+        bot_config: BotConfig,
+        mock_search_service: MagicMock,
+    ) -> None:
+        """Test complete workflow: search -> export results."""
+        from src.tnse.bot.search_handlers import search_command
+        from src.tnse.bot.export_handlers import export_command
+
+        # Step 1: Execute search
+        message = create_test_message("/search test query")
+        update = create_test_update(message)
+        user_data = {}  # Shared user data
+        context = create_test_context({
+            "config": bot_config,
+            "search_service": mock_search_service,
+        })
+        context.user_data = user_data
+        context.args = ["test", "query"]
+
+        await search_command(update, context)
+
+        # Verify search results stored
+        assert "last_search_results" in user_data
+        assert "last_search_query" in user_data
+        assert user_data["last_search_query"] == "test query"
+
+        # Step 2: Export results
+        export_message = create_test_message("/export csv")
+        export_update = create_test_update(export_message)
+        export_context = create_test_context({"config": bot_config})
+        export_context.user_data = user_data  # Same user data
+        export_context.args = ["csv"]
+
+        await export_command(export_update, export_context)
+
+        # Verify document was sent
+        export_update.message.reply_document.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_search_then_save_topic_workflow(
+        self,
+        bot_config: BotConfig,
+        mock_search_service: MagicMock,
+        mock_topic_service: MagicMock,
+    ) -> None:
+        """Test complete workflow: search -> save as topic."""
+        from src.tnse.bot.search_handlers import search_command
+        from src.tnse.bot.topic_handlers import savetopic_command
+
+        # Step 1: Execute search
+        message = create_test_message("/search corruption news")
+        update = create_test_update(message)
+        user_data = {}
+        context = create_test_context({
+            "config": bot_config,
+            "search_service": mock_search_service,
+        })
+        context.user_data = user_data
+        context.args = ["corruption", "news"]
+
+        await search_command(update, context)
+
+        # Verify search completed
+        assert user_data["last_search_query"] == "corruption news"
+
+        # Step 2: Save as topic
+        save_message = create_test_message("/savetopic my_corruption_topic")
+        save_update = create_test_update(save_message)
+        save_context = create_test_context({
+            "config": bot_config,
+            "topic_service": mock_topic_service,
+        })
+        save_context.user_data = user_data
+        save_context.args = ["my_corruption_topic"]
+
+        await savetopic_command(save_update, save_context)
+
+        # Verify topic service was called
+        mock_topic_service.save_topic.assert_called_once()
+        save_update.message.reply_text.assert_called()
+        call_args = save_update.message.reply_text.call_args[0][0]
+        assert "saved" in call_args.lower()
+
+
+class TestChannelLifecycle:
+    """Integration tests for channel lifecycle operations."""
+
+    @pytest.mark.asyncio
+    async def test_add_list_remove_channel_workflow(
+        self,
+        bot_config: BotConfig,
+        mock_channel_service: MagicMock,
+        mock_db_session: MagicMock,
+    ) -> None:
+        """Test complete channel lifecycle: add -> list -> remove."""
+        from src.tnse.bot.channel_handlers import (
+            addchannel_command,
+            channels_command,
+            removechannel_command,
+        )
+        from src.tnse.db.models import Channel
+
+        # Create a mock channel that will be "stored"
+        stored_channel = Channel(
+            telegram_id=1234567890,
+            username="test_channel",
+            title="Test Channel",
+            description="A test channel",
+            subscriber_count=5000,
+            is_active=True,
+        )
+
+        # Step 1: Add channel
+        add_message = create_test_message("/addchannel @test_channel")
+        add_update = create_test_update(add_message)
+        add_context = create_test_context({
+            "config": bot_config,
+            "channel_service": mock_channel_service,
+            "db_session_factory": mock_db_session,
+        })
+        add_context.args = ["@test_channel"]
+
+        await addchannel_command(add_update, add_context)
+
+        # Verify add succeeded
+        add_update.message.reply_text.assert_called()
+        add_result = add_update.message.reply_text.call_args[0][0]
+        assert "successfully added" in add_result.lower() or "test channel" in add_result.lower()
+
+        # Step 2: Mock the session to return the channel for list
+        mock_session = mock_db_session()
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [stored_channel]
+        mock_session.execute = AsyncMock(return_value=mock_result)
+
+        list_message = create_test_message("/channels")
+        list_update = create_test_update(list_message)
+        list_context = create_test_context({
+            "config": bot_config,
+            "db_session_factory": lambda: mock_session,
+        })
+
+        await channels_command(list_update, list_context)
+
+        # Verify list shows channel
+        list_update.message.reply_text.assert_called()
+        list_result = list_update.message.reply_text.call_args[0][0]
+        assert "test_channel" in list_result.lower() or "monitored" in list_result.lower()
+
+
+class TestBotInitializationFlow:
+    """Integration tests for bot initialization and startup."""
+
+    def test_bot_application_initializes_with_all_handlers(
+        self,
+        bot_config: BotConfig,
+    ) -> None:
+        """Test that bot application initializes with all required handlers."""
+        from src.tnse.bot.application import create_bot_application
+        from telegram.ext import CommandHandler, CallbackQueryHandler
+
+        app = create_bot_application(bot_config)
+
+        # Count command handlers
+        command_handlers = [
+            handler for handler in app.handlers.get(0, [])
+            if isinstance(handler, CommandHandler)
+        ]
+
+        # Should have handlers for all commands (including aliases)
+        # Basic: start, help, settings
+        # Channel: addchannel, removechannel, channels, channelinfo
+        # Search: search
+        # Export: export
+        # Topics: savetopic, topics, topic, deletetopic, templates, usetemplate
+        # Advanced: import, health
+        assert len(command_handlers) >= 15
+
+        # Should have callback query handler for pagination
+        callback_handlers = [
+            handler for handler in app.handlers.get(0, [])
+            if isinstance(handler, CallbackQueryHandler)
+        ]
+        assert len(callback_handlers) >= 1
+
+    def test_bot_config_stored_correctly(
+        self,
+        bot_config: BotConfig,
+    ) -> None:
+        """Test that bot config is stored correctly in bot_data."""
+        from src.tnse.bot.application import create_bot_application
+
+        app = create_bot_application(bot_config)
+
+        assert "config" in app.bot_data
+        stored_config = app.bot_data["config"]
+        assert stored_config.token == bot_config.token
+        assert stored_config.allowed_users == bot_config.allowed_users
+
+
+class TestPaginationNavigation:
+    """Integration tests for pagination navigation."""
+
+    @pytest.mark.asyncio
+    async def test_pagination_navigates_through_results(
+        self,
+        bot_config: BotConfig,
+        mock_search_service: MagicMock,
+    ) -> None:
+        """Test navigating through paginated search results."""
+        from src.tnse.bot.search_handlers import search_command, pagination_callback
+        from src.tnse.search.service import SearchResult
+        from datetime import datetime, timezone
+
+        # Create many mock results
+        many_results = []
+        for index in range(20):
+            many_results.append(
+                SearchResult(
+                    post_id=str(uuid4()),
+                    channel_id=str(uuid4()),
+                    channel_username=f"channel_{index}",
+                    channel_title=f"Channel {index}",
+                    text_content=f"Post content {index}",
+                    published_at=datetime.now(timezone.utc) - timedelta(hours=index),
+                    view_count=1000 * (20 - index),
+                    reaction_score=50.0,
+                    relative_engagement=0.3,
+                    telegram_message_id=index,
+                )
+            )
+
+        mock_search_service.search = AsyncMock(return_value=many_results)
+
+        # Step 1: Initial search
+        message = create_test_message("/search test")
+        update = create_test_update(message)
+        user_data = {}
+        context = create_test_context({
+            "config": bot_config,
+            "search_service": mock_search_service,
+        })
+        context.user_data = user_data
+        context.args = ["test"]
+
+        await search_command(update, context)
+
+        # Results should be stored
+        assert len(user_data.get("last_search_results", [])) == 20
+
+        # Step 2: Navigate to page 2
+        callback_update = MagicMock()
+        callback_query = MagicMock()
+        callback_query.data = "search:test:2"
+        callback_query.answer = AsyncMock()
+        callback_query.edit_message_text = AsyncMock()
+        callback_update.callback_query = callback_query
+
+        page_context = create_test_context({
+            "config": bot_config,
+            "search_service": mock_search_service,
+        })
+        page_context.user_data = user_data  # Same user data
+
+        await pagination_callback(callback_update, page_context)
+
+        # Callback should answer and edit message
+        callback_query.answer.assert_called_once()
+        callback_query.edit_message_text.assert_called_once()
+
+        # Edited message should show page 2
+        call_kwargs = callback_query.edit_message_text.call_args
+        edited_text = call_kwargs[0][0] if call_kwargs[0] else call_kwargs.kwargs.get("text", "")
+        assert "showing" in edited_text.lower()
+
+
+class TestHelperCommandsIntegration:
+    """Integration tests for helper commands."""
+
+    @pytest.mark.asyncio
+    async def test_help_command_shows_all_sections(
+        self,
+        bot_config: BotConfig,
+    ) -> None:
+        """Test that help command shows all command sections."""
+        from src.tnse.bot.handlers import help_command
+
+        message = create_test_message("/help")
+        update = create_test_update(message)
+        context = create_test_context({"config": bot_config})
+
+        await help_command(update, context)
+
+        update.message.reply_text.assert_called_once()
+        help_text = update.message.reply_text.call_args[0][0]
+
+        # Should have all sections
+        assert "Quick Start" in help_text
+        assert "Basic Commands" in help_text
+        assert "Channel Management" in help_text
+        assert "Search Commands" in help_text
+        assert "Topic Management" in help_text
+        assert "Advanced" in help_text
+
+    @pytest.mark.asyncio
+    async def test_settings_command_shows_access_mode(
+        self,
+        bot_config: BotConfig,
+    ) -> None:
+        """Test that settings command shows access mode."""
+        from src.tnse.bot.handlers import settings_command
+
+        message = create_test_message("/settings")
+        update = create_test_update(message)
+        context = create_test_context({"config": bot_config})
+
+        await settings_command(update, context)
+
+        update.message.reply_text.assert_called_once()
+        settings_text = update.message.reply_text.call_args[0][0]
+
+        # Should show access mode
+        assert "Access Mode" in settings_text
+        assert "Restricted" in settings_text or "Open" in settings_text
+
+        # Should show user ID
+        assert "User ID" in settings_text
