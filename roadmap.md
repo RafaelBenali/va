@@ -4,8 +4,8 @@
 
 | Field | Value |
 |-------|-------|
-| Document Version | 2.0 |
-| Date | 2025-12-25 |
+| Document Version | 2.1 |
+| Date | 2025-12-28 |
 | Status | Draft |
 | Source Documents | requirements.md v1.1, priorities.md v1.0 |
 
@@ -833,6 +833,244 @@ Found 47 results (showing 1-5)
 
 ---
 
+
+## Phase 6: Codebase Modernization Audit (Week 12+)
+
+**Theme:** Comprehensive review and update of the entire codebase considering all technology updates through December 2025
+
+**Goal:** Ensure all code, dependencies, and patterns align with current best practices and latest stable releases
+
+
+### Batch 6.1 - Dependency and Security Audit
+
+---
+
+#### WS-6.1: Dependency Modernization
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-6.1 |
+| **Name** | Dependency Version Audit and Update |
+| **Description** | Review all project dependencies against December 2025 releases |
+| **Dependencies** | WS-4.3 (Deployment Complete) |
+| **Parallel With** | WS-6.2 |
+| **Effort** | M |
+| **Status** | Complete |
+| **Started** | 2025-12-28 |
+| **Completed** | 2025-12-28 |
+
+**Tasks:**
+- [x] Audit `requirements.txt` and `requirements-dev.txt` versions
+- [x] Update FastAPI to latest stable (check for breaking changes)
+- [x] Update SQLAlchemy and Alembic to latest stable
+- [x] Update python-telegram-bot/aiogram to latest stable
+- [x] Update Telethon/Pyrogram to latest stable
+- [x] Update Celery and Redis clients to latest stable
+- [x] Update testing tools (pytest, coverage, etc.)
+- [x] Update linting tools (ruff, black, mypy)
+- [x] Document breaking changes and migration steps
+- [x] Run full test suite after updates
+
+**Acceptance Criteria:**
+- [x] All dependencies at December 2025 stable versions
+- [x] No known security vulnerabilities (pip-audit clean)
+- [x] All tests passing after updates
+- [x] Breaking changes documented with migration guide
+
+---
+
+#### WS-6.2: Security Audit
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-6.2 |
+| **Name** | Security Vulnerability Assessment |
+| **Description** | Comprehensive security review of codebase and dependencies |
+| **Dependencies** | WS-4.3 (Deployment Complete) |
+| **Parallel With** | WS-6.1 |
+| **Effort** | M |
+| **Status** | In Progress |
+| **Started** | 2025-12-28 |
+
+**Tasks:**
+- [ ] Run pip-audit for dependency vulnerabilities
+- [ ] Run safety check for known CVEs
+- [ ] Review secrets management (no hardcoded credentials)
+- [ ] Audit SQL queries for injection vulnerabilities
+- [ ] Review Telegram API credential storage
+- [ ] Check Docker image base security
+- [ ] Review environment variable handling
+- [ ] Audit input validation on bot commands
+- [ ] Review rate limiting implementation
+
+**Acceptance Criteria:**
+- [ ] No high/critical CVEs in dependencies
+- [ ] All secrets properly externalized
+- [ ] Input validation on all user inputs
+- [ ] Security audit report generated
+
+---
+
+### Batch 6.2 - Code Quality and Patterns
+
+---
+
+#### WS-6.3: Python Modernization
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-6.3 |
+| **Name** | Python 3.12+ Feature Adoption |
+| **Description** | Evaluate and adopt modern Python features and patterns |
+| **Dependencies** | WS-6.1 |
+| **Parallel With** | WS-6.4 |
+| **Effort** | M |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Update to Python 3.12+ if applicable
+- [ ] Review and adopt new typing features (TypedDict improvements, etc.)
+- [ ] Evaluate new async patterns and improvements
+- [ ] Review dataclass usage vs Pydantic v2 models
+- [ ] Update exception handling patterns
+- [ ] Review and optimize context managers
+- [ ] Evaluate new match/case pattern opportunities
+- [ ] Review str formatting (f-strings optimization)
+
+**Acceptance Criteria:**
+- [ ] Codebase uses modern Python idioms
+- [ ] Type hints comprehensive and using latest syntax
+- [ ] Code passes mypy strict mode
+- [ ] Performance benchmarks maintained or improved
+
+---
+
+#### WS-6.4: API and Database Review
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-6.4 |
+| **Name** | API Design and Database Optimization |
+| **Description** | Review FastAPI patterns and database query optimization |
+| **Dependencies** | WS-6.1 |
+| **Parallel With** | WS-6.3 |
+| **Effort** | M |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Review FastAPI router organization
+- [ ] Update Pydantic models to v2 patterns
+- [ ] Audit database indexes for query patterns
+- [ ] Review and optimize N+1 query patterns
+- [ ] Evaluate PostgreSQL 16+ features for applicability
+- [ ] Review Redis usage patterns and key expiry
+- [ ] Audit Celery task patterns and error handling
+- [ ] Review connection pooling configuration
+
+**Acceptance Criteria:**
+- [ ] API response times within targets
+- [ ] Database queries optimized
+- [ ] Connection pools properly configured
+- [ ] Celery tasks properly retrying on failure
+
+---
+
+### Batch 6.3 - Infrastructure and Documentation
+
+---
+
+#### WS-6.5: Infrastructure Modernization
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-6.5 |
+| **Name** | Docker and CI/CD Updates |
+| **Description** | Update containerization and CI/CD to latest practices |
+| **Dependencies** | WS-6.3, WS-6.4 |
+| **Parallel With** | WS-6.6 |
+| **Effort** | S |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Update Docker base images to latest stable
+- [ ] Review multi-stage build optimization
+- [ ] Update docker-compose to Compose V2 syntax if needed
+- [ ] Review GitHub Actions workflow versions
+- [ ] Update CI dependencies caching strategy
+- [ ] Review Render.com configuration for new features
+- [ ] Update Makefile targets as needed
+
+**Acceptance Criteria:**
+- [ ] Docker images build successfully
+- [ ] CI pipeline runs efficiently
+- [ ] Deployment process unchanged or improved
+
+---
+
+#### WS-6.6: Documentation Refresh
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-6.6 |
+| **Name** | Documentation Update |
+| **Description** | Update all documentation to reflect changes |
+| **Dependencies** | WS-6.3, WS-6.4 |
+| **Parallel With** | WS-6.5 |
+| **Effort** | S |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Update CLAUDE.md with any new patterns
+- [ ] Update README.md with version requirements
+- [ ] Update DEPLOYMENT.md with new configurations
+- [ ] Update API documentation if applicable
+- [ ] Create CHANGELOG.md entry for modernization phase
+- [ ] Update requirements documentation
+
+**Acceptance Criteria:**
+- [ ] All documentation reflects current state
+- [ ] Version requirements clearly stated
+- [ ] Breaking changes documented
+
+---
+
+### Phase 6 Gate (Modernization Complete)
+
+| Criterion | Target |
+|-----------|--------|
+| Dependencies updated | All at December 2025 stable |
+| Security audit | No high/critical vulnerabilities |
+| Tests passing | 100% test suite success |
+| Documentation | Fully updated |
+
+---
+
+## Updated Work Stream Quick Reference
+
+| ID | Name | Dependencies | Effort |
+|----|------|--------------|--------|
+| WS-6.1 | Dependency Modernization | WS-4.3 | M |
+| WS-6.2 | Security Audit | WS-4.3 | M |
+| WS-6.3 | Python Modernization | WS-6.1 | M |
+| WS-6.4 | API and Database Review | WS-6.1 | M |
+| WS-6.5 | Infrastructure Modernization | WS-6.3, WS-6.4 | S |
+| WS-6.6 | Documentation Refresh | WS-6.3, WS-6.4 | S |
+
+---
+
+## Updated Timeline Summary
+
+| Phase | Duration | End State |
+|-------|----------|-----------|
+| Phase 1: Bot + Foundation | 3 weeks | Bot running, channels managed, content collected |
+| Phase 2: Search + Ranking | 3 weeks | **MVP** - Working search with metrics |
+| Phase 3: Enhanced Features | 2 weeks | Topics, templates, polish |
+| Phase 4: Render.com Deployment | 1 week | **PRODUCTION** - Bot deployed on Render.com |
+| Phase 5: LLM (Optional) | 2 weeks | Semantic analysis |
+| Phase 6: Codebase Modernization | 1-2 weeks | December 2025 technology refresh |
+| **Total (with Modernization)** | **12-13 weeks** | Full implementation with modern stack |
+ 
+
 ## Critical Path
 
 ```
@@ -873,6 +1111,18 @@ Found 47 results (showing 1-5)
         |
         v (optional)
 [WS-5.1: LLM] -> [WS-5.2: Semantic]
+        |
+        v
+[WS-6.1: Dependencies] + [WS-6.2: Security Audit]
+        |
+        v
+[WS-6.3: Python Modern] + [WS-6.4: API/DB Review]
+        |
+        v
+[WS-6.5: Infrastructure] + [WS-6.6: Documentation]
+        |
+        v
+  [MODERNIZATION COMPLETE]
 ```
 
 ---
@@ -953,5 +1203,3 @@ async def check_access(update):
 Set `ALLOWED_USERS = []` for open access, or list specific user IDs for restricted access.
 
 ---
-
-*End of Simplified Roadmap*
