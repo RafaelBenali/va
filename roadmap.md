@@ -1057,7 +1057,8 @@ Found 47 results (showing 1-5)
 | **Dependencies** | WS-6.1, WS-6.2 |
 | **Parallel With** | WS-6.8 |
 | **Effort** | M |
-| **Status** | Not Started |
+| **Status** | In Progress |
+| **Started** | 2025-12-29 |
 
 **Tasks:**
 - [ ] Review python-telegram-bot/aiogram usage patterns
