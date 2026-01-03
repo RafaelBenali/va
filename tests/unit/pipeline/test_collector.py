@@ -625,8 +625,8 @@ class TestCollectChannelMessages:
         return ContentCollector(telegram_client=mock_client)
 
     @pytest.mark.asyncio
-    async def test_collect_channel_messages_returns_list(self, collector):
-        """Test that collect_channel_messages returns a list."""
+    async def test_collect_channel_messages_returns_dict_with_messages(self, collector):
+        """Test that collect_channel_messages returns a dict with messages list."""
         collector.telegram_client.get_messages = AsyncMock(return_value=[])
 
         result = await collector.collect_channel_messages(
@@ -634,7 +634,10 @@ class TestCollectChannelMessages:
             channel_uuid=uuid4(),
         )
 
-        assert isinstance(result, list)
+        # WS-8.2: Return format changed to dict with metadata
+        assert isinstance(result, dict)
+        assert "messages" in result
+        assert isinstance(result["messages"], list)
 
     @pytest.mark.asyncio
     async def test_collect_channel_messages_filters_by_window(self, collector):
@@ -665,8 +668,10 @@ class TestCollectChannelMessages:
         )
 
         # Only recent message should be in result
-        assert len(result) == 1
-        assert result[0]["telegram_message_id"] == 2
+        # WS-8.2: Access messages from result dict
+        messages = result["messages"]
+        assert len(messages) == 1
+        assert messages[0]["telegram_message_id"] == 2
 
     @pytest.mark.asyncio
     async def test_collect_channel_messages_handles_empty(self, collector):
@@ -678,4 +683,6 @@ class TestCollectChannelMessages:
             channel_uuid=uuid4(),
         )
 
-        assert result == []
+        # WS-8.2: Return format changed to dict with messages list
+        assert result["messages"] == []
+        assert result["count"] == 0

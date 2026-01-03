@@ -72,6 +72,8 @@ class Channel(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         photo_url: URL to channel photo
         invite_link: Channel invite link
         is_active: Whether channel is currently being monitored
+        last_collected_message_id: Last Telegram message ID collected from this channel
+        last_collected_at: Timestamp of the last content collection
         created_at: When channel was added
         updated_at: When channel was last modified
     """
@@ -115,6 +117,17 @@ class Channel(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         Boolean,
         default=True,
         nullable=False,
+    )
+    last_collected_message_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger,
+        nullable=True,
+        index=True,
+        comment="Last Telegram message ID collected from this channel",
+    )
+    last_collected_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Timestamp of the last content collection",
     )
 
     # Relationships

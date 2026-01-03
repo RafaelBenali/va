@@ -4,6 +4,7 @@ TNSE Content Collector Service
 Service for collecting and extracting content from Telegram channels.
 
 Work Stream: WS-1.6 - Content Collection Pipeline
+Updated: WS-8.2 - Resume-from-Last-Point Tracking
 
 Requirements addressed:
 - Create content collection job
@@ -12,6 +13,8 @@ Requirements addressed:
 - Extract media metadata
 - Detect forwarded messages
 - Store in database
+- Track last collected message ID per channel (WS-8.2)
+- Avoid re-fetching already collected messages (WS-8.2)
 """
 
 from dataclasses import dataclass
@@ -204,31 +207,53 @@ class ContentCollector:
         telegram_channel_id: int,
         channel_uuid: UUID,
         limit: int = 100,
-    ) -> list[dict[str, Any]]:
+        min_id: int = 0,
+    ) -> dict[str, Any]:
         """Collect messages from a channel within the content window.
 
         Fetches messages from the Telegram API and filters them
         to only include messages within the configured time window.
+        Uses min_id for resume-from-last-point tracking (WS-8.2).
 
         Args:
             telegram_channel_id: Telegram's internal channel ID.
             channel_uuid: UUID of the channel in the database.
             limit: Maximum number of messages to fetch.
+            min_id: Only fetch messages with ID greater than this value.
+                   Use 0 for first collection (fetch all in window).
+                   Use last_collected_message_id for subsequent collections.
 
         Returns:
-            List of message data dictionaries ready for storage.
+            Dictionary containing:
+            - messages: List of message data dictionaries ready for storage
+            - max_message_id: Highest message ID collected (for resume tracking)
+            - count: Number of messages collected
         """
-        # Fetch messages from Telegram
+        # Normalize min_id: negative values treated as 0
+        effective_min_id = max(0, min_id)
+
+        # Fetch messages from Telegram with min_id for resume tracking
         messages = await self.telegram_client.get_messages(
             channel_id=telegram_channel_id,
             limit=limit,
+            min_id=effective_min_id,
         )
 
         # Filter by time window and extract data
-        result = []
+        collected_messages: list[dict[str, Any]] = []
+        max_message_id: int | None = None
+
         for message in messages:
             if self.is_within_window(message.date):
                 message_data = self.extract_message_data(message, channel_uuid)
-                result.append(message_data)
+                collected_messages.append(message_data)
 
-        return result
+                # Track max message ID for resume tracking
+                if max_message_id is None or message.message_id > max_message_id:
+                    max_message_id = message.message_id
+
+        return {
+            "messages": collected_messages,
+            "max_message_id": max_message_id,
+            "count": len(collected_messages),
+        }
