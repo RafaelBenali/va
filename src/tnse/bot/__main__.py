@@ -19,6 +19,7 @@ from src.tnse.bot.application import create_bot_from_env
 from src.tnse.bot.config import BotTokenMissingError
 from src.tnse.core.config import get_settings
 from src.tnse.core.logging import configure_logging, get_logger
+from src.tnse.search.service import SearchService
 from src.tnse.telegram.channel_service import ChannelService
 from src.tnse.telegram.client import TelegramClientConfig, TelethonClient
 
@@ -48,6 +49,7 @@ def validate_telegram_credentials() -> bool:
 def log_service_status(
     channel_service: ChannelService | None = None,
     db_session_factory: object | None = None,
+    search_service: SearchService | None = None,
 ) -> None:
     """
     Log the status of all services at startup.
@@ -58,6 +60,7 @@ def log_service_status(
     Args:
         channel_service: The channel service instance, or None if unavailable.
         db_session_factory: The database session factory, or None if unavailable.
+        search_service: The search service instance, or None if unavailable.
     """
     # Log channel service status
     if channel_service is not None:
@@ -85,6 +88,20 @@ def log_service_status(
             hint="Check database configuration (POSTGRES_* environment variables)"
         )
 
+    # Log search service status
+    if search_service is not None:
+        logger.info(
+            "Search service initialized",
+            status="available",
+            feature="/search enabled"
+        )
+    else:
+        logger.warning(
+            "Search service not available - /search command will not work",
+            hint="Check database configuration (POSTGRES_* environment variables)",
+            disabled_commands=["/search", "/s"]
+        )
+
 
 def create_channel_service() -> ChannelService | None:
     """Create the channel service with Telegram client.
@@ -106,6 +123,27 @@ def create_channel_service() -> ChannelService | None:
     return ChannelService(client)
 
 
+def create_search_service(db_session_factory: object | None) -> SearchService | None:
+    """Create the search service with database session factory.
+
+    Returns None if db_session_factory is not available.
+
+    Args:
+        db_session_factory: The database session factory for database access.
+
+    Returns:
+        A SearchService instance, or None if db_session_factory is None.
+    """
+    if db_session_factory is None:
+        logger.warning(
+            "Search service not created - database session factory not available",
+            hint="Check database configuration (POSTGRES_* environment variables)"
+        )
+        return None
+
+    return SearchService(session_factory=db_session_factory)
+
+
 def main() -> int:
     """
     Main entry point for the bot.
@@ -123,16 +161,21 @@ def main() -> int:
         logger.info("Initializing channel service...")
         channel_service = create_channel_service()
 
+        logger.info("Initializing search service...")
+        search_service = create_search_service(db_session_factory)
+
         # Log service availability summary
         log_service_status(
             channel_service=channel_service,
             db_session_factory=db_session_factory,
+            search_service=search_service,
         )
 
         # Create application from environment with dependencies
         application = create_bot_from_env(
             channel_service=channel_service,
             db_session_factory=db_session_factory,
+            search_service=search_service,
         )
 
         # Run the bot with polling (default mode)

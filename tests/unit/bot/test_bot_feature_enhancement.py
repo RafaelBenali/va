@@ -396,8 +396,15 @@ class TestImprovedErrorMessages:
         call_args = update.message.reply_text.call_args
         message = call_args[0][0] if call_args[0] else call_args[1].get("text", "")
 
-        # Error should suggest trying again
-        assert "try" in message.lower() or "later" in message.lower() or "again" in message.lower()
+        # Error should provide actionable guidance (WS-7.3 improvement)
+        # For configuration errors, directs user to contact administrator
+        assert (
+            "administrator" in message.lower() or
+            "contact" in message.lower() or
+            "configured" in message.lower() or
+            "try" in message.lower() or
+            "again" in message.lower()
+        )
 
     @pytest.mark.asyncio
     async def test_channel_not_found_suggests_list_command(self):

@@ -385,9 +385,15 @@ async def search_command(
 
     if not search_service:
         await update.message.reply_text(
-            "Search service is not available. Please try again later."
+            "Search is not available.\n\n"
+            "The search service is not configured. "
+            "Please contact the administrator to check the database configuration."
         )
-        logger.error("Search service not configured in bot_data")
+        logger.error(
+            "Search service not configured",
+            hint="Ensure database is running and POSTGRES_* environment variables are set",
+            user_id=user_id,
+        )
         return
 
     try:
@@ -511,7 +517,13 @@ async def pagination_callback(
 
     if not search_service:
         await callback_query.edit_message_text(
-            "Search service is not available. Please try again."
+            "Search is not available.\n\n"
+            "The search service is not configured. "
+            "Please contact the administrator."
+        )
+        logger.error(
+            "Search service not configured for pagination",
+            hint="Ensure database is running and POSTGRES_* environment variables are set",
         )
         return
 
