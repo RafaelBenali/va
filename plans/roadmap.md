@@ -69,6 +69,54 @@ async def addchannel_command(...):
 
 ---
 
+---
+
+## Batch 7.2 (Complete) - Channel Validation Connection Bug
+
+### Phase 7.2.1: Fix TelethonClient Not Connected Bug
+- **Status:** Complete
+- **Started:** 2026-01-04
+- **Completed:** 2026-01-04
+- **Tasks:**
+  - [x] Write failing test reproducing the connection bug
+  - [x] Fix TelethonClient to auto-connect when get_channel is called
+  - [x] Fix TelethonClient to auto-connect when get_messages is called
+  - [x] Update devlog with fix details
+- **Effort:** S
+- **Done When:**
+  - /addchannel command successfully validates real public channels
+  - Client auto-connects when API calls require connection
+  - All existing tests pass (920 passed, 2 pre-existing failures unrelated to this fix)
+
+**Root Cause Analysis:**
+```
+File: src/tnse/telegram/client.py (lines 286-296)
+
+async def get_channel(self, identifier: str) -> ChannelInfo | None:
+    if self._client is None or not self.is_connected:
+        return None  # <-- RETURNS None IMMEDIATELY IF NOT CONNECTED
+```
+
+```
+File: src/tnse/bot/__main__.py (lines 89-106)
+
+def create_channel_service() -> ChannelService | None:
+    config = TelegramClientConfig.from_settings(settings)
+    client = TelethonClient(config)  # <-- CLIENT CREATED BUT NEVER CONNECTED
+    return ChannelService(client)
+```
+
+The TelethonClient is instantiated but `connect()` is never called. When `get_channel()`
+is called, it checks `self.is_connected` which is `False`, so it returns `None` immediately
+without ever calling the Telegram API.
+
+**Solution Approach:**
+1. Modify `get_channel()` and `get_messages()` to auto-connect if not already connected
+2. The client should lazily connect on first API call
+3. Alternative: Connect in `create_channel_service()` - but this requires async startup
+
+---
+
 ## Backlog
 
 - [ ] Phase 5 LLM Integration (optional)
