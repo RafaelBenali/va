@@ -283,6 +283,26 @@ class TelethonClient(TelegramClient):
         """Async context manager exit."""
         await self.disconnect()
 
+    async def _ensure_connected(self) -> bool:
+        """Ensure the client is connected, auto-connecting if necessary.
+
+        This method enables lazy connection - the client will automatically
+        connect on first API call if not already connected.
+
+        Returns:
+            True if connected (or successfully auto-connected), False otherwise
+        """
+        if self._client is None:
+            return False
+
+        if not self.is_connected:
+            try:
+                await self.connect()
+            except Exception:
+                return False
+
+        return self.is_connected
+
     async def get_channel(self, identifier: str) -> ChannelInfo | None:
         """Get information about a channel.
 
@@ -292,7 +312,7 @@ class TelethonClient(TelegramClient):
         Returns:
             ChannelInfo if channel exists and is accessible, None otherwise
         """
-        if self._client is None or not self.is_connected:
+        if not await self._ensure_connected():
             return None
 
         try:
@@ -337,7 +357,7 @@ class TelethonClient(TelegramClient):
         Returns:
             List of MessageInfo objects
         """
-        if self._client is None or not self.is_connected:
+        if not await self._ensure_connected():
             return []
 
         try:

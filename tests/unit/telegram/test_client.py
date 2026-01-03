@@ -408,29 +408,44 @@ class TestTelethonClientAutoConnect:
         mock_full_channel.full_chat.participants_count = 10000
         mock_full_channel.full_chat.about = "Test description"
 
-        with patch.object(client, "_client") as mock_telethon:
-            # Set up the mock to simulate connection
-            mock_telethon.connect = AsyncMock()
-            mock_telethon.is_connected = MagicMock(return_value=True)
-            mock_telethon.get_entity = AsyncMock(return_value=mock_entity)
-            mock_telethon.__call__ = AsyncMock(return_value=mock_full_channel)
+        # Track if connect was called
+        connect_called = False
 
-            result = await client.get_channel("test_channel")
+        async def mock_connect():
+            nonlocal connect_called
+            connect_called = True
+            # Simulate what connect() does - set _connected based on is_connected()
+            client._connected = True
 
-            # The client should have auto-connected
-            mock_telethon.connect.assert_awaited_once()
+        # Create mock _client that properly handles async calls
+        # Must be AsyncMock so that client(request) is awaitable
+        mock_telethon = AsyncMock()
+        mock_telethon.get_entity = AsyncMock(return_value=mock_entity)
+        mock_telethon.return_value = mock_full_channel
 
-            # And should have returned channel info, not None
-            assert result is not None
-            assert isinstance(result, ChannelInfo)
-            assert result.username == "test_channel"
+        # Patch the connect method to track calls and simulate connection
+        with patch.object(client, "connect", side_effect=mock_connect):
+            # Also need to patch _client for the API calls after connection
+            with patch.object(client, "_client", mock_telethon):
+                result = await client.get_channel("test_channel")
+
+        # The client should have auto-connected
+        assert connect_called is True
+
+        # After connect(), _connected should be True
+        assert client._connected is True
+
+        # And should have returned channel info, not None
+        assert result is not None
+        assert isinstance(result, ChannelInfo)
+        assert result.username == "test_channel"
 
     @pytest.mark.asyncio
     async def test_get_channel_does_not_reconnect_if_already_connected(
         self, client_config: Any
     ):
         """Test that get_channel does not reconnect if already connected."""
-        from src.tnse.telegram.client import TelethonClient
+        from src.tnse.telegram.client import ChannelInfo, TelethonClient
 
         client = TelethonClient(client_config)
 
@@ -445,23 +460,31 @@ class TestTelethonClientAutoConnect:
         mock_full_channel.full_chat.participants_count = 10000
         mock_full_channel.full_chat.about = "Test description"
 
-        with patch.object(client, "_client") as mock_telethon:
-            # Simulate already connected
-            mock_telethon.connect = AsyncMock()
-            mock_telethon.is_connected = MagicMock(return_value=True)
-            mock_telethon.get_entity = AsyncMock(return_value=mock_entity)
-            mock_telethon.__call__ = AsyncMock(return_value=mock_full_channel)
+        # Pre-connect the client
+        client._connected = True
 
-            # Pre-connect the client
-            client._connected = True
+        # Track if connect was called
+        connect_called = False
 
-            result = await client.get_channel("test_channel")
+        async def mock_connect():
+            nonlocal connect_called
+            connect_called = True
 
-            # Should NOT have called connect again
-            mock_telethon.connect.assert_not_awaited()
+        # Create mock _client that properly handles async calls
+        mock_telethon = AsyncMock()
+        mock_telethon.get_entity = AsyncMock(return_value=mock_entity)
+        mock_telethon.return_value = mock_full_channel
 
-            # But should still return channel info
-            assert result is not None
+        with patch.object(client, "connect", side_effect=mock_connect):
+            with patch.object(client, "_client", mock_telethon):
+                result = await client.get_channel("test_channel")
+
+        # Should NOT have called connect again
+        assert connect_called is False
+
+        # But should still return channel info
+        assert result is not None
+        assert isinstance(result, ChannelInfo)
 
     @pytest.mark.asyncio
     async def test_get_messages_auto_connects_when_not_connected(
@@ -489,17 +512,23 @@ class TestTelethonClientAutoConnect:
         mock_message.media = None
         mock_message.fwd_from = None
 
-        with patch.object(client, "_client") as mock_telethon:
-            # Set up the mock to simulate connection
-            mock_telethon.connect = AsyncMock()
-            mock_telethon.is_connected = MagicMock(return_value=True)
-            mock_telethon.get_messages = AsyncMock(return_value=[mock_message])
+        # Track if connect was called
+        connect_called = False
 
-            result = await client.get_messages(channel_id=123456789, limit=10)
+        async def mock_connect():
+            nonlocal connect_called
+            connect_called = True
+            client._connected = True
 
-            # The client should have auto-connected
-            mock_telethon.connect.assert_awaited_once()
+        with patch.object(client, "connect", side_effect=mock_connect):
+            with patch.object(client, "_client") as mock_telethon:
+                mock_telethon.get_messages = AsyncMock(return_value=[mock_message])
 
-            # And should have returned messages, not empty list
-            assert len(result) == 1
-            assert result[0].message_id == 12345
+                result = await client.get_messages(channel_id=123456789, limit=10)
+
+        # The client should have auto-connected
+        assert connect_called is True
+
+        # And should have returned messages, not empty list
+        assert len(result) == 1
+        assert result[0].message_id == 12345
