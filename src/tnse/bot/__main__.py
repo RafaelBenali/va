@@ -8,6 +8,11 @@ This module provides the main entry point for running the Telegram bot.
 
 import sys
 
+from dotenv import load_dotenv
+
+# Load .env file before any settings are read
+load_dotenv()
+
 from src.tnse.bot.application import create_bot_from_env
 from src.tnse.bot.config import BotTokenMissingError
 from src.tnse.core.logging import configure_logging, get_logger

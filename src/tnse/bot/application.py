@@ -5,6 +5,9 @@ Provides the main bot application setup and runner functions.
 This is the primary interface for starting and running the bot.
 """
 
+from collections.abc import Callable
+from typing import Any
+
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler
 
 from src.tnse.bot.advanced_channel_handlers import (
@@ -46,15 +49,25 @@ configure_logging()
 logger = get_logger(__name__)
 
 
-def create_bot_application(config: BotConfig) -> Application:
+def create_bot_application(
+    config: BotConfig,
+    channel_service: Any | None = None,
+    db_session_factory: Callable[[], Any] | None = None,
+    search_service: Any | None = None,
+    topic_service: Any | None = None,
+) -> Application:
     """
     Create and configure a Telegram bot Application.
 
-    Sets up all command handlers and stores configuration in bot_data
-    for access by handlers.
+    Sets up all command handlers and stores configuration and services
+    in bot_data for access by handlers.
 
     Args:
         config: The bot configuration.
+        channel_service: Service for channel validation and metadata.
+        db_session_factory: Factory function that creates database sessions.
+        search_service: Service for searching posts.
+        topic_service: Service for managing saved topics.
 
     Returns:
         Configured Application instance.
@@ -74,8 +87,16 @@ def create_bot_application(config: BotConfig) -> Application:
     builder = Application.builder().token(config.token)
     application = builder.build()
 
-    # Store config in bot_data for handlers to access
+    # Store config and services in bot_data for handlers to access
     application.bot_data["config"] = config
+    if channel_service is not None:
+        application.bot_data["channel_service"] = channel_service
+    if db_session_factory is not None:
+        application.bot_data["db_session_factory"] = db_session_factory
+    if search_service is not None:
+        application.bot_data["search_service"] = search_service
+    if topic_service is not None:
+        application.bot_data["topic_service"] = topic_service
 
     # Register command handlers with access control
     # Wrap handlers with require_access for protected commands
@@ -122,12 +143,24 @@ def create_bot_application(config: BotConfig) -> Application:
     return application
 
 
-def create_bot_from_env() -> Application:
+def create_bot_from_env(
+    channel_service: Any | None = None,
+    db_session_factory: Callable[[], Any] | None = None,
+    search_service: Any | None = None,
+    topic_service: Any | None = None,
+) -> Application:
     """
     Create a bot Application from environment variables.
 
     Reads configuration from environment and creates a fully configured
-    bot application.
+    bot application. Optional service dependencies can be provided for
+    dependency injection.
+
+    Args:
+        channel_service: Optional channel service for validation.
+        db_session_factory: Optional database session factory.
+        search_service: Optional search service.
+        topic_service: Optional topic service.
 
     Returns:
         Configured Application instance.
@@ -140,10 +173,22 @@ def create_bot_from_env() -> Application:
         >>> app.run_polling()
     """
     config = create_bot_config()
-    return create_bot_application(config)
+    return create_bot_application(
+        config,
+        channel_service=channel_service,
+        db_session_factory=db_session_factory,
+        search_service=search_service,
+        topic_service=topic_service,
+    )
 
 
-def run_bot_polling(config: BotConfig) -> None:
+def run_bot_polling(
+    config: BotConfig,
+    channel_service: Any | None = None,
+    db_session_factory: Callable[[], Any] | None = None,
+    search_service: Any | None = None,
+    topic_service: Any | None = None,
+) -> None:
     """
     Run the bot using long polling mode.
 
@@ -152,13 +197,29 @@ def run_bot_polling(config: BotConfig) -> None:
 
     Args:
         config: The bot configuration.
+        channel_service: Optional channel service for validation.
+        db_session_factory: Optional database session factory.
+        search_service: Optional search service.
+        topic_service: Optional topic service.
     """
     logger.info("Starting bot in polling mode")
-    application = create_bot_application(config)
+    application = create_bot_application(
+        config,
+        channel_service=channel_service,
+        db_session_factory=db_session_factory,
+        search_service=search_service,
+        topic_service=topic_service,
+    )
     application.run_polling(allowed_updates=["message", "callback_query"])
 
 
-def run_bot_webhook(config: BotConfig) -> None:
+def run_bot_webhook(
+    config: BotConfig,
+    channel_service: Any | None = None,
+    db_session_factory: Callable[[], Any] | None = None,
+    search_service: Any | None = None,
+    topic_service: Any | None = None,
+) -> None:
     """
     Run the bot using webhook mode.
 
@@ -167,6 +228,10 @@ def run_bot_webhook(config: BotConfig) -> None:
 
     Args:
         config: The bot configuration.
+        channel_service: Optional channel service for validation.
+        db_session_factory: Optional database session factory.
+        search_service: Optional search service.
+        topic_service: Optional topic service.
 
     Raises:
         ValueError: If webhook_url is not configured.
@@ -178,7 +243,13 @@ def run_bot_webhook(config: BotConfig) -> None:
         "Starting bot in webhook mode",
         webhook_url=config.webhook_url
     )
-    application = create_bot_application(config)
+    application = create_bot_application(
+        config,
+        channel_service=channel_service,
+        db_session_factory=db_session_factory,
+        search_service=search_service,
+        topic_service=topic_service,
+    )
 
     # Parse webhook URL to get host and port
     from urllib.parse import urlparse
@@ -193,7 +264,13 @@ def run_bot_webhook(config: BotConfig) -> None:
     )
 
 
-async def run_bot(config: BotConfig) -> None:
+async def run_bot(
+    config: BotConfig,
+    channel_service: Any | None = None,
+    db_session_factory: Callable[[], Any] | None = None,
+    search_service: Any | None = None,
+    topic_service: Any | None = None,
+) -> None:
     """
     Run the bot in the configured mode (polling or webhook).
 
@@ -202,8 +279,24 @@ async def run_bot(config: BotConfig) -> None:
 
     Args:
         config: The bot configuration.
+        channel_service: Optional channel service for validation.
+        db_session_factory: Optional database session factory.
+        search_service: Optional search service.
+        topic_service: Optional topic service.
     """
     if config.polling_mode:
-        run_bot_polling(config)
+        run_bot_polling(
+            config,
+            channel_service=channel_service,
+            db_session_factory=db_session_factory,
+            search_service=search_service,
+            topic_service=topic_service,
+        )
     else:
-        run_bot_webhook(config)
+        run_bot_webhook(
+            config,
+            channel_service=channel_service,
+            db_session_factory=db_session_factory,
+            search_service=search_service,
+            topic_service=topic_service,
+        )
