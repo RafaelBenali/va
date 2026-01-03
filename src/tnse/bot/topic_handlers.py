@@ -91,32 +91,38 @@ async def savetopic_command(
     topic_service = context.bot_data.get("topic_service")
     if not topic_service:
         await update.message.reply_text(
-            "Topic service is not available. Please try again later."
+            "Topic management is not configured.\n\n"
+            "The database connection is required for saving topics.\n\n"
+            "Please contact the administrator to configure database settings."
         )
-        logger.error("Topic service not configured in bot_data")
+        logger.error(
+            "Topic service not configured in bot_data",
+            hint="Check POSTGRES_* environment variables"
+        )
         return
 
     try:
-        # Save the topic
-        saved_topic = await topic_service.save_topic(
-            name=topic_name,
-            keywords=last_query,
-            sort_mode=context.user_data.get("last_sort_mode"),
-        )
+        # Save the topic using the factory context manager
+        async with topic_service() as topic_svc:
+            saved_topic = await topic_svc.save_topic(
+                name=topic_name,
+                keywords=last_query,
+                sort_mode=context.user_data.get("last_sort_mode"),
+            )
 
-        await update.message.reply_text(
-            f"Topic saved successfully!\n\n"
-            f"Name: {saved_topic.name}\n"
-            f"Keywords: {saved_topic.keywords}\n\n"
-            f"Use /topic {saved_topic.name} to run this search again."
-        )
+            await update.message.reply_text(
+                f"Topic saved successfully!\n\n"
+                f"Name: {saved_topic.name}\n"
+                f"Keywords: {saved_topic.keywords}\n\n"
+                f"Use /topic {saved_topic.name} to run this search again."
+            )
 
-        logger.info(
-            "Topic saved",
-            user_id=user_id,
-            topic_name=saved_topic.name,
-            keywords=saved_topic.keywords,
-        )
+            logger.info(
+                "Topic saved",
+                user_id=user_id,
+                topic_name=saved_topic.name,
+                keywords=saved_topic.keywords,
+            )
 
     except TopicAlreadyExistsError:
         await update.message.reply_text(
@@ -161,40 +167,46 @@ async def topics_command(
     topic_service = context.bot_data.get("topic_service")
     if not topic_service:
         await update.message.reply_text(
-            "Topic service is not available. Please try again later."
+            "Topic management is not configured.\n\n"
+            "The database connection is required for topic features.\n\n"
+            "Please contact the administrator to configure database settings."
         )
-        logger.error("Topic service not configured in bot_data")
+        logger.error(
+            "Topic service not configured in bot_data",
+            hint="Check POSTGRES_* environment variables"
+        )
         return
 
     try:
-        topics = await topic_service.list_topics()
+        async with topic_service() as topic_svc:
+            topics = await topic_svc.list_topics()
 
-        if not topics:
-            await update.message.reply_text(
-                "No saved topics found.\n\n"
-                "Use /search to find news, then /savetopic <name> to save it.\n"
-                "Or use /templates to see pre-built topic templates."
+            if not topics:
+                await update.message.reply_text(
+                    "No saved topics found.\n\n"
+                    "Use /search to find news, then /savetopic <name> to save it.\n"
+                    "Or use /templates to see pre-built topic templates."
+                )
+                logger.info("No topics found", user_id=user_id)
+                return
+
+            # Format the topic list
+            lines = ["Your Saved Topics:\n"]
+            for topic in topics:
+                lines.append(f"- {topic.name}")
+                lines.append(f"  Keywords: {topic.keywords}")
+                lines.append("")
+
+            lines.append("Use /topic <name> to run a saved search.")
+            lines.append("Use /deletetopic <name> to delete a topic.")
+
+            await update.message.reply_text("\n".join(lines))
+
+            logger.info(
+                "Topics listed",
+                user_id=user_id,
+                topic_count=len(topics),
             )
-            logger.info("No topics found", user_id=user_id)
-            return
-
-        # Format the topic list
-        lines = ["Your Saved Topics:\n"]
-        for topic in topics:
-            lines.append(f"- {topic.name}")
-            lines.append(f"  Keywords: {topic.keywords}")
-            lines.append("")
-
-        lines.append("Use /topic <name> to run a saved search.")
-        lines.append("Use /deletetopic <name> to delete a topic.")
-
-        await update.message.reply_text("\n".join(lines))
-
-        logger.info(
-            "Topics listed",
-            user_id=user_id,
-            topic_count=len(topics),
-        )
 
     except Exception as error:
         await update.message.reply_text(
@@ -238,92 +250,103 @@ async def topic_command(
     topic_service = context.bot_data.get("topic_service")
     if not topic_service:
         await update.message.reply_text(
-            "Topic service is not available. Please try again later."
+            "Topic management is not configured.\n\n"
+            "The database connection is required for topic features.\n\n"
+            "Please contact the administrator to configure database settings."
         )
-        logger.error("Topic service not configured in bot_data")
+        logger.error(
+            "Topic service not configured in bot_data",
+            hint="Check POSTGRES_* environment variables"
+        )
         return
 
     # Get search service from bot_data
     search_service = context.bot_data.get("search_service")
     if not search_service:
         await update.message.reply_text(
-            "Search service is not available. Please try again later."
+            "Search is not configured.\n\n"
+            "The database connection is required for search features.\n\n"
+            "Please contact the administrator to configure database settings."
         )
-        logger.error("Search service not configured in bot_data")
+        logger.error(
+            "Search service not configured in bot_data",
+            hint="Check POSTGRES_* environment variables"
+        )
         return
 
     try:
-        # Get the saved topic
-        saved_topic = await topic_service.get_topic(topic_name)
+        # Get the saved topic using the factory context manager
+        async with topic_service() as topic_svc:
+            saved_topic = await topic_svc.get_topic(topic_name)
 
-        logger.info(
-            "Running saved topic search",
-            user_id=user_id,
-            topic_name=saved_topic.name,
-            keywords=saved_topic.keywords,
-        )
-
-        # Execute search with topic keywords
-        results = await search_service.search(
-            query=saved_topic.keywords,
-            hours=24,
-            limit=100,
-            offset=0,
-        )
-
-        if not results:
-            await update.message.reply_text(
-                f'Topic: "{saved_topic.name}"\n'
-                f'Keywords: {saved_topic.keywords}\n\n'
-                f"No results found. Try again later or update your topic."
-            )
             logger.info(
-                "No results for topic",
+                "Running saved topic search",
+                user_id=user_id,
                 topic_name=saved_topic.name,
+                keywords=saved_topic.keywords,
             )
-            return
 
-        # Format results
-        page_size = DEFAULT_PAGE_SIZE
-        total_count = len(results)
-        total_pages = (total_count + page_size - 1) // page_size
-        page_results = results[:page_size]
-
-        formatter = SearchFormatter()
-        formatted_message = formatter.format_results_page(
-            query=f"[Topic: {saved_topic.name}] {saved_topic.keywords}",
-            results=page_results,
-            total_count=total_count,
-            page=1,
-            page_size=page_size,
-        )
-
-        # Create pagination keyboard if multiple pages
-        reply_markup = None
-        if total_pages > 1:
-            # Use keywords for pagination to maintain compatibility
-            reply_markup = create_pagination_keyboard(
+            # Execute search with topic keywords
+            results = await search_service.search(
                 query=saved_topic.keywords,
-                current_page=1,
-                total_pages=total_pages,
+                hours=24,
+                limit=100,
+                offset=0,
             )
 
-        await update.message.reply_text(
-            formatted_message,
-            reply_markup=reply_markup,
-            parse_mode="Markdown",
-            disable_web_page_preview=True,
-        )
+            if not results:
+                await update.message.reply_text(
+                    f'Topic: "{saved_topic.name}"\n'
+                    f'Keywords: {saved_topic.keywords}\n\n'
+                    f"No results found. Try again later or update your topic."
+                )
+                logger.info(
+                    "No results for topic",
+                    topic_name=saved_topic.name,
+                )
+                return
 
-        # Store results for pagination
-        context.user_data["last_search_query"] = saved_topic.keywords
-        context.user_data["last_search_results"] = results
+            # Format results
+            page_size = DEFAULT_PAGE_SIZE
+            total_count = len(results)
+            total_pages = (total_count + page_size - 1) // page_size
+            page_results = results[:page_size]
 
-        logger.info(
-            "Topic search completed",
-            topic_name=saved_topic.name,
-            result_count=total_count,
-        )
+            formatter = SearchFormatter()
+            formatted_message = formatter.format_results_page(
+                query=f"[Topic: {saved_topic.name}] {saved_topic.keywords}",
+                results=page_results,
+                total_count=total_count,
+                page=1,
+                page_size=page_size,
+            )
+
+            # Create pagination keyboard if multiple pages
+            reply_markup = None
+            if total_pages > 1:
+                # Use keywords for pagination to maintain compatibility
+                reply_markup = create_pagination_keyboard(
+                    query=saved_topic.keywords,
+                    current_page=1,
+                    total_pages=total_pages,
+                )
+
+            await update.message.reply_text(
+                formatted_message,
+                reply_markup=reply_markup,
+                parse_mode="Markdown",
+                disable_web_page_preview=True,
+            )
+
+            # Store results for pagination
+            context.user_data["last_search_query"] = saved_topic.keywords
+            context.user_data["last_search_results"] = results
+
+            logger.info(
+                "Topic search completed",
+                topic_name=saved_topic.name,
+                result_count=total_count,
+            )
 
     except TopicNotFoundError:
         await update.message.reply_text(
@@ -380,23 +403,29 @@ async def deletetopic_command(
     topic_service = context.bot_data.get("topic_service")
     if not topic_service:
         await update.message.reply_text(
-            "Topic service is not available. Please try again later."
+            "Topic management is not configured.\n\n"
+            "The database connection is required for topic features.\n\n"
+            "Please contact the administrator to configure database settings."
         )
-        logger.error("Topic service not configured in bot_data")
+        logger.error(
+            "Topic service not configured in bot_data",
+            hint="Check POSTGRES_* environment variables"
+        )
         return
 
     try:
-        await topic_service.delete_topic(topic_name)
+        async with topic_service() as topic_svc:
+            await topic_svc.delete_topic(topic_name)
 
-        await update.message.reply_text(
-            f"Topic '{topic_name}' has been deleted."
-        )
+            await update.message.reply_text(
+                f"Topic '{topic_name}' has been deleted."
+            )
 
-        logger.info(
-            "Topic deleted",
-            user_id=user_id,
-            topic_name=topic_name,
-        )
+            logger.info(
+                "Topic deleted",
+                user_id=user_id,
+                topic_name=topic_name,
+            )
 
     except TopicNotFoundError:
         await update.message.reply_text(
@@ -507,9 +536,14 @@ async def use_template_command(
     search_service = context.bot_data.get("search_service")
     if not search_service:
         await update.message.reply_text(
-            "Search service is not available. Please try again later."
+            "Search is not configured.\n\n"
+            "The database connection is required for search features.\n\n"
+            "Please contact the administrator to configure database settings."
         )
-        logger.error("Search service not configured in bot_data")
+        logger.error(
+            "Search service not configured in bot_data",
+            hint="Check POSTGRES_* environment variables"
+        )
         return
 
     try:

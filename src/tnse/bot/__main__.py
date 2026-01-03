@@ -22,6 +22,7 @@ from src.tnse.core.logging import configure_logging, get_logger
 from src.tnse.search.service import SearchService
 from src.tnse.telegram.channel_service import ChannelService
 from src.tnse.telegram.client import TelegramClientConfig, TelethonClient
+from src.tnse.topics.service import TopicService
 
 # Configure logging
 configure_logging()
@@ -50,6 +51,7 @@ def log_service_status(
     channel_service: ChannelService | None = None,
     db_session_factory: object | None = None,
     search_service: SearchService | None = None,
+    topic_service: object | None = None,
 ) -> None:
     """
     Log the status of all services at startup.
@@ -61,6 +63,7 @@ def log_service_status(
         channel_service: The channel service instance, or None if unavailable.
         db_session_factory: The database session factory, or None if unavailable.
         search_service: The search service instance, or None if unavailable.
+        topic_service: The topic service factory, or None if unavailable.
     """
     # Log channel service status
     if channel_service is not None:
@@ -100,6 +103,20 @@ def log_service_status(
             "Search service not available - /search command will not work",
             hint="Check database configuration (POSTGRES_* environment variables)",
             disabled_commands=["/search", "/s"]
+        )
+
+    # Log topic service status
+    if topic_service is not None:
+        logger.info(
+            "Topic service initialized",
+            status="available",
+            feature="/savetopic, /topics, /topic, /deletetopic enabled"
+        )
+    else:
+        logger.warning(
+            "Topic service not available - topic commands will not work",
+            hint="Check database configuration (POSTGRES_* environment variables)",
+            disabled_commands=["/savetopic", "/topics", "/topic", "/deletetopic"]
         )
 
 
@@ -144,6 +161,96 @@ def create_search_service(db_session_factory: object | None) -> SearchService | 
     return SearchService(session_factory=db_session_factory)
 
 
+class TopicServiceFactory:
+    """Factory for creating TopicService instances with database sessions.
+
+    This factory wraps the database session factory and provides a callable
+    interface for creating TopicService instances. Each call creates a new
+    session and TopicService instance for use in async context managers.
+
+    Usage:
+        factory = TopicServiceFactory(db_session_factory)
+        async with factory() as topic_service:
+            await topic_service.list_topics()
+    """
+
+    def __init__(self, session_factory: object) -> None:
+        """Initialize the factory with a session factory.
+
+        Args:
+            session_factory: Async database session factory.
+        """
+        self.session_factory = session_factory
+
+    def __call__(self):
+        """Create a new TopicService context manager.
+
+        Returns:
+            An async context manager that yields a TopicService instance.
+        """
+        return TopicServiceContext(self.session_factory)
+
+
+class TopicServiceContext:
+    """Async context manager for TopicService with session lifecycle management.
+
+    Creates a database session and TopicService on entry, and properly
+    closes the session on exit.
+    """
+
+    def __init__(self, session_factory: object) -> None:
+        """Initialize the context with a session factory.
+
+        Args:
+            session_factory: Async database session factory.
+        """
+        self.session_factory = session_factory
+        self.session = None
+        self.topic_service = None
+
+    async def __aenter__(self) -> TopicService:
+        """Enter the async context and create a TopicService.
+
+        Returns:
+            A TopicService instance with an active session.
+        """
+        self.session = self.session_factory()
+        self.topic_service = TopicService(self.session)
+        return self.topic_service
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Exit the async context and close the session.
+
+        Args:
+            exc_type: Exception type if an exception was raised.
+            exc_val: Exception value if an exception was raised.
+            exc_tb: Exception traceback if an exception was raised.
+        """
+        if self.session is not None:
+            await self.session.close()
+
+
+def create_topic_service(db_session_factory: object | None) -> TopicServiceFactory | None:
+    """Create a topic service factory with database session factory.
+
+    Returns None if db_session_factory is not available.
+
+    Args:
+        db_session_factory: The database session factory for database access.
+
+    Returns:
+        A TopicServiceFactory callable, or None if db_session_factory is None.
+    """
+    if db_session_factory is None:
+        logger.warning(
+            "Topic service not created - database session factory not available",
+            hint="Check database configuration (POSTGRES_* environment variables)"
+        )
+        return None
+
+    return TopicServiceFactory(db_session_factory)
+
+
 def main() -> int:
     """
     Main entry point for the bot.
@@ -164,11 +271,15 @@ def main() -> int:
         logger.info("Initializing search service...")
         search_service = create_search_service(db_session_factory)
 
+        logger.info("Initializing topic service...")
+        topic_service = create_topic_service(db_session_factory)
+
         # Log service availability summary
         log_service_status(
             channel_service=channel_service,
             db_session_factory=db_session_factory,
             search_service=search_service,
+            topic_service=topic_service,
         )
 
         # Create application from environment with dependencies
@@ -176,6 +287,7 @@ def main() -> int:
             channel_service=channel_service,
             db_session_factory=db_session_factory,
             search_service=search_service,
+            topic_service=topic_service,
         )
 
         # Run the bot with polling (default mode)

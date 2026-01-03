@@ -191,9 +191,14 @@ def mock_search_service() -> MagicMock:
 
 @pytest.fixture
 def mock_topic_service() -> MagicMock:
-    """Create a mock topic service."""
+    """Create a mock topic service factory.
+
+    Returns a callable factory that returns an async context manager
+    which yields the actual topic service mock.
+    """
     from src.tnse.topics.service import SavedTopicData
 
+    # Create the actual service mock
     service = MagicMock()
 
     sample_topic = SavedTopicData(
@@ -207,7 +212,18 @@ def mock_topic_service() -> MagicMock:
     service.list_topics = AsyncMock(return_value=[sample_topic])
     service.delete_topic = AsyncMock(return_value=None)
 
-    return service
+    # Create the context manager mock
+    context_manager = MagicMock()
+    context_manager.__aenter__ = AsyncMock(return_value=service)
+    context_manager.__aexit__ = AsyncMock(return_value=None)
+
+    # Create the factory mock - callable that returns the context manager
+    factory = MagicMock(return_value=context_manager)
+
+    # Attach the service for assertions in tests
+    factory._service = service
+
+    return factory
 
 
 class TestBotStartupAndCommandRegistration:
@@ -445,8 +461,8 @@ class TestTopicFlow:
 
         await savetopic_command(update, context)
 
-        # Verify topic was saved
-        mock_topic_service.save_topic.assert_called_once()
+        # Verify topic was saved (access the actual service through factory._service)
+        mock_topic_service._service.save_topic.assert_called_once()
 
         # Verify success message
         update.message.reply_text.assert_called()
@@ -471,7 +487,7 @@ class TestTopicFlow:
 
         await topics_command(update, context)
 
-        mock_topic_service.list_topics.assert_called_once()
+        mock_topic_service._service.list_topics.assert_called_once()
         update.message.reply_text.assert_called()
         call_args = update.message.reply_text.call_args[0][0]
         # Should show the topic
@@ -498,8 +514,8 @@ class TestTopicFlow:
 
         await topic_command(update, context)
 
-        # Verify topic was retrieved
-        mock_topic_service.get_topic.assert_called_once()
+        # Verify topic was retrieved (access the actual service through factory._service)
+        mock_topic_service._service.get_topic.assert_called_once()
 
         # Verify search was executed
         mock_search_service.search.assert_called_once()
@@ -769,8 +785,8 @@ class TestFullSearchWorkflow:
 
         await savetopic_command(save_update, save_context)
 
-        # Verify topic service was called
-        mock_topic_service.save_topic.assert_called_once()
+        # Verify topic service was called (access through factory._service)
+        mock_topic_service._service.save_topic.assert_called_once()
         save_update.message.reply_text.assert_called()
         call_args = save_update.message.reply_text.call_args[0][0]
         assert "saved" in call_args.lower()

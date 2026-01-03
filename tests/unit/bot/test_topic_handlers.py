@@ -84,6 +84,23 @@ def mock_topic_service() -> AsyncMock:
     return service
 
 
+@pytest.fixture
+def mock_topic_service_factory(mock_topic_service: AsyncMock) -> MagicMock:
+    """Create a mock TopicServiceFactory that returns the mock_topic_service in an async context.
+
+    This mimics the factory pattern: topic_service() returns an async context manager
+    that yields the actual TopicService instance.
+    """
+    # Create the context manager mock
+    context_manager = MagicMock()
+    context_manager.__aenter__ = AsyncMock(return_value=mock_topic_service)
+    context_manager.__aexit__ = AsyncMock(return_value=None)
+
+    # Create the factory mock - callable that returns the context manager
+    factory = MagicMock(return_value=context_manager)
+    return factory
+
+
 class TestSavetopicCommand:
     """Tests for the /savetopic command handler."""
 
@@ -124,13 +141,14 @@ class TestSavetopicCommand:
         mock_update: Update,
         mock_context: MagicMock,
         mock_topic_service: AsyncMock,
+        mock_topic_service_factory: MagicMock,
     ) -> None:
         """/savetopic saves topic from last search."""
         mock_context.args = ["corruption_news"]
         mock_context.user_data = {
             "last_search_query": "corruption bribery",
         }
-        mock_context.bot_data = {"topic_service": mock_topic_service}
+        mock_context.bot_data = {"topic_service": mock_topic_service_factory}
 
         saved_topic = SavedTopicData(
             name="corruption_news",
@@ -156,11 +174,12 @@ class TestSavetopicCommand:
         mock_update: Update,
         mock_context: MagicMock,
         mock_topic_service: AsyncMock,
+        mock_topic_service_factory: MagicMock,
     ) -> None:
         """/savetopic handles duplicate topic name."""
         mock_context.args = ["existing_topic"]
         mock_context.user_data = {"last_search_query": "test query"}
-        mock_context.bot_data = {"topic_service": mock_topic_service}
+        mock_context.bot_data = {"topic_service": mock_topic_service_factory}
 
         mock_topic_service.save_topic.side_effect = TopicAlreadyExistsError("existing_topic")
 
@@ -180,9 +199,10 @@ class TestTopicsCommand:
         mock_update: Update,
         mock_context: MagicMock,
         mock_topic_service: AsyncMock,
+        mock_topic_service_factory: MagicMock,
     ) -> None:
         """/topics lists all saved topics."""
-        mock_context.bot_data = {"topic_service": mock_topic_service}
+        mock_context.bot_data = {"topic_service": mock_topic_service_factory}
 
         topics = [
             SavedTopicData(
@@ -212,9 +232,10 @@ class TestTopicsCommand:
         mock_update: Update,
         mock_context: MagicMock,
         mock_topic_service: AsyncMock,
+        mock_topic_service_factory: MagicMock,
     ) -> None:
         """/topics shows message when no topics saved."""
-        mock_context.bot_data = {"topic_service": mock_topic_service}
+        mock_context.bot_data = {"topic_service": mock_topic_service_factory}
         mock_topic_service.list_topics.return_value = []
 
         await topics_command(mock_update, mock_context)
@@ -248,10 +269,11 @@ class TestTopicCommand:
         mock_update: Update,
         mock_context: MagicMock,
         mock_topic_service: AsyncMock,
+        mock_topic_service_factory: MagicMock,
     ) -> None:
         """/topic runs search with saved topic keywords."""
         mock_context.args = ["corruption_news"]
-        mock_context.bot_data = {"topic_service": mock_topic_service}
+        mock_context.bot_data = {"topic_service": mock_topic_service_factory}
 
         saved_topic = SavedTopicData(
             name="corruption_news",
@@ -276,6 +298,7 @@ class TestTopicCommand:
         mock_update: Update,
         mock_context: MagicMock,
         mock_topic_service: AsyncMock,
+        mock_topic_service_factory: MagicMock,
     ) -> None:
         """/topic shows error for nonexistent topic."""
         mock_context.args = ["nonexistent"]
@@ -283,7 +306,7 @@ class TestTopicCommand:
         # Also need search_service since topic_command checks for it
         mock_search_service = AsyncMock()
         mock_context.bot_data = {
-            "topic_service": mock_topic_service,
+            "topic_service": mock_topic_service_factory,
             "search_service": mock_search_service,
         }
 
@@ -320,10 +343,11 @@ class TestDeletetopicCommand:
         mock_update: Update,
         mock_context: MagicMock,
         mock_topic_service: AsyncMock,
+        mock_topic_service_factory: MagicMock,
     ) -> None:
         """/deletetopic deletes an existing topic."""
         mock_context.args = ["old_topic"]
-        mock_context.bot_data = {"topic_service": mock_topic_service}
+        mock_context.bot_data = {"topic_service": mock_topic_service_factory}
 
         await deletetopic_command(mock_update, mock_context)
 
@@ -338,10 +362,11 @@ class TestDeletetopicCommand:
         mock_update: Update,
         mock_context: MagicMock,
         mock_topic_service: AsyncMock,
+        mock_topic_service_factory: MagicMock,
     ) -> None:
         """/deletetopic shows error for nonexistent topic."""
         mock_context.args = ["nonexistent"]
-        mock_context.bot_data = {"topic_service": mock_topic_service}
+        mock_context.bot_data = {"topic_service": mock_topic_service_factory}
 
         mock_topic_service.delete_topic.side_effect = TopicNotFoundError("nonexistent")
 
