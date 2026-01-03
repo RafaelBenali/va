@@ -578,3 +578,189 @@ class TestErrorMessageUserFriendliness:
         assert "context" not in error_message_lower
         assert "traceback" not in error_message_lower
         assert "exception" not in error_message_lower
+
+
+# =============================================================================
+# Test: Search Service Injection (WS-7.3)
+# =============================================================================
+
+
+class TestSearchServiceInjection:
+    """Tests for search service dependency injection (WS-7.3)."""
+
+    def test_create_search_service_function_exists(self):
+        """Test that a create_search_service function exists in __main__."""
+        try:
+            from src.tnse.bot.__main__ import create_search_service
+            assert callable(create_search_service)
+        except ImportError:
+            pytest.fail("create_search_service function should exist in __main__.py")
+
+    def test_create_search_service_returns_search_service_when_db_available(self):
+        """Test that create_search_service returns a SearchService when db is available."""
+        with patch.dict(os.environ, {
+            "POSTGRES_HOST": "localhost",
+            "POSTGRES_PORT": "5432",
+            "POSTGRES_DB": "test",
+            "POSTGRES_USER": "test",
+            "POSTGRES_PASSWORD": "test",
+        }, clear=False):
+            from src.tnse.core.config import get_settings
+            get_settings.cache_clear()
+
+            mock_session_factory = MagicMock()
+
+            from src.tnse.bot.__main__ import create_search_service
+            from src.tnse.search.service import SearchService
+
+            result = create_search_service(mock_session_factory)
+            assert result is not None
+            assert isinstance(result, SearchService)
+
+    def test_create_search_service_returns_none_when_no_db_factory(self):
+        """Test that create_search_service returns None when db_session_factory is None."""
+        try:
+            from src.tnse.bot.__main__ import create_search_service
+
+            result = create_search_service(None)
+            assert result is None
+        except ImportError:
+            pytest.fail("create_search_service function should exist in __main__.py")
+
+
+class TestSearchServiceInjectionInApplication:
+    """Tests for search service injection behavior in application.py."""
+
+    def test_application_bot_data_contains_search_service_when_provided(self):
+        """Test that search_service is properly stored in bot_data when provided."""
+        from src.tnse.bot.application import create_bot_application
+        from src.tnse.bot.config import BotConfig
+
+        mock_search_service = MagicMock()
+        config = BotConfig(token="123456:ABC-DEF")
+
+        app = create_bot_application(
+            config=config,
+            search_service=mock_search_service,
+        )
+
+        assert app.bot_data.get("search_service") is mock_search_service
+
+    def test_application_bot_data_excludes_search_service_when_none(self):
+        """Test that search_service is NOT in bot_data when None."""
+        from src.tnse.bot.application import create_bot_application
+        from src.tnse.bot.config import BotConfig
+
+        config = BotConfig(token="123456:ABC-DEF")
+
+        app = create_bot_application(
+            config=config,
+            search_service=None,
+        )
+
+        # Should not have search_service key at all
+        assert "search_service" not in app.bot_data
+
+
+class TestSearchServiceStatusLogging:
+    """Tests for search service status logging at bot startup."""
+
+    def test_log_service_status_logs_search_service_available(self):
+        """Test that log_service_status logs when search service is available."""
+        from src.tnse.bot.__main__ import log_service_status
+
+        with patch("src.tnse.bot.__main__.logger") as mock_logger:
+            mock_search_service = MagicMock()
+
+            log_service_status(
+                search_service=mock_search_service,
+            )
+
+            # Should log info about available search service
+            info_calls = [str(call) for call in mock_logger.info.call_args_list]
+            assert any("search" in str(call).lower() for call in info_calls), \
+                f"Expected info about search service. Got: {info_calls}"
+
+    def test_log_service_status_logs_warning_when_search_service_unavailable(self):
+        """Test that log_service_status logs warning when search service is None."""
+        from src.tnse.bot.__main__ import log_service_status
+
+        with patch("src.tnse.bot.__main__.logger") as mock_logger:
+
+            log_service_status(
+                search_service=None,
+            )
+
+            # Should log warning about missing search service
+            warning_calls = [str(call) for call in mock_logger.warning.call_args_list]
+            assert any(
+                "search" in str(call).lower()
+                for call in warning_calls
+            ), f"Expected warning about search service. Got: {warning_calls}"
+
+
+class TestSearchHandlerErrorMessages:
+    """Tests for clear error messages in search handlers when service not configured."""
+
+    @pytest.mark.asyncio
+    async def test_search_shows_configuration_error_message(self):
+        """Test that search shows a helpful message when search_service is not configured."""
+        from src.tnse.bot.search_handlers import search_command
+
+        update = MagicMock()
+        update.effective_user = MagicMock()
+        update.effective_user.id = 123456
+        update.effective_chat = MagicMock()
+        update.effective_chat.id = 123456
+        update.message.reply_text = AsyncMock()
+
+        context = MagicMock()
+        context.args = ["test", "query"]
+        context.bot_data = {
+            # search_service is missing (None)
+        }
+        context.bot.send_chat_action = AsyncMock()
+
+        await search_command(update, context)
+
+        # Should show a helpful configuration error message
+        update.message.reply_text.assert_called_once()
+        call_args = update.message.reply_text.call_args[0][0]
+
+        # Error message should mention configuration or be actionable
+        error_message_lower = call_args.lower()
+        assert (
+            "not configured" in error_message_lower or
+            "configuration" in error_message_lower or
+            "administrator" in error_message_lower or
+            "database" in error_message_lower or
+            "not available" in error_message_lower
+        ), f"Expected configuration hint in error message. Got: {call_args}"
+
+    @pytest.mark.asyncio
+    async def test_search_error_does_not_expose_internal_details(self):
+        """Test that search error does not expose internal implementation details."""
+        from src.tnse.bot.search_handlers import search_command
+
+        update = MagicMock()
+        update.effective_user = MagicMock()
+        update.effective_user.id = 123456
+        update.effective_chat = MagicMock()
+        update.effective_chat.id = 123456
+        update.message.reply_text = AsyncMock()
+
+        context = MagicMock()
+        context.args = ["test"]
+        context.bot_data = {}  # No services configured
+        context.bot.send_chat_action = AsyncMock()
+
+        await search_command(update, context)
+
+        call_args = update.message.reply_text.call_args[0][0]
+        error_message_lower = call_args.lower()
+
+        # Should NOT expose internal details
+        assert "bot_data" not in error_message_lower
+        assert "context" not in error_message_lower
+        assert "traceback" not in error_message_lower
+        assert "exception" not in error_message_lower
