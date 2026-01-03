@@ -20,6 +20,28 @@ from uuid import uuid4
 import pytest
 
 
+class AsyncSessionMock:
+    """Mock that supports async context manager protocol for SQLAlchemy AsyncSession."""
+
+    def __init__(self) -> None:
+        self.execute = AsyncMock()
+
+    async def __aenter__(self) -> "AsyncSessionMock":
+        return self
+
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> bool:
+        return False
+
+
+def create_async_session_mock() -> AsyncSessionMock:
+    """Create a mock that supports async context manager protocol.
+
+    Returns a mock session that implements __aenter__/__aexit__ for use
+    with async with, and has an async execute method.
+    """
+    return AsyncSessionMock()
+
+
 class TestSearchService:
     """Tests for the SearchService class."""
 
@@ -48,10 +70,8 @@ class TestKeywordSearch:
         """Test that search returns posts matching the keyword."""
         from src.tnse.search.service import SearchService, SearchResult
 
-        mock_session = MagicMock()
+        mock_session = create_async_session_mock()
         mock_session_factory = MagicMock(return_value=mock_session)
-        mock_session.__enter__ = MagicMock(return_value=mock_session)
-        mock_session.__exit__ = MagicMock(return_value=False)
 
         service = SearchService(session_factory=mock_session_factory)
 
@@ -111,10 +131,8 @@ class TestMultipleKeywordSearch:
         """Test searching with multiple keywords (AND logic)."""
         from src.tnse.search.service import SearchService
 
-        mock_session = MagicMock()
+        mock_session = create_async_session_mock()
         mock_session_factory = MagicMock(return_value=mock_session)
-        mock_session.__enter__ = MagicMock(return_value=mock_session)
-        mock_session.__exit__ = MagicMock(return_value=False)
 
         service = SearchService(session_factory=mock_session_factory)
 
@@ -133,10 +151,8 @@ class TestMultipleKeywordSearch:
         """Test that search handles Russian keywords properly."""
         from src.tnse.search.service import SearchService
 
-        mock_session = MagicMock()
+        mock_session = create_async_session_mock()
         mock_session_factory = MagicMock(return_value=mock_session)
-        mock_session.__enter__ = MagicMock(return_value=mock_session)
-        mock_session.__exit__ = MagicMock(return_value=False)
 
         service = SearchService(session_factory=mock_session_factory)
 
@@ -154,10 +170,8 @@ class TestMultipleKeywordSearch:
         """Test that search handles mixed Russian and English keywords."""
         from src.tnse.search.service import SearchService
 
-        mock_session = MagicMock()
+        mock_session = create_async_session_mock()
         mock_session_factory = MagicMock(return_value=mock_session)
-        mock_session.__enter__ = MagicMock(return_value=mock_session)
-        mock_session.__exit__ = MagicMock(return_value=False)
 
         service = SearchService(session_factory=mock_session_factory)
 
@@ -179,10 +193,8 @@ class TestSearchTimeWindow:
         """Test that search defaults to 24-hour time window."""
         from src.tnse.search.service import SearchService
 
-        mock_session = MagicMock()
+        mock_session = create_async_session_mock()
         mock_session_factory = MagicMock(return_value=mock_session)
-        mock_session.__enter__ = MagicMock(return_value=mock_session)
-        mock_session.__exit__ = MagicMock(return_value=False)
 
         service = SearchService(session_factory=mock_session_factory)
 
@@ -201,10 +213,8 @@ class TestSearchTimeWindow:
         """Test that search respects custom time window parameter."""
         from src.tnse.search.service import SearchService
 
-        mock_session = MagicMock()
+        mock_session = create_async_session_mock()
         mock_session_factory = MagicMock(return_value=mock_session)
-        mock_session.__enter__ = MagicMock(return_value=mock_session)
-        mock_session.__exit__ = MagicMock(return_value=False)
 
         service = SearchService(session_factory=mock_session_factory)
 
@@ -371,10 +381,8 @@ class TestSearchCaching:
         """Test that search results are cached."""
         from src.tnse.search.service import SearchService
 
-        mock_session = MagicMock()
+        mock_session = create_async_session_mock()
         mock_session_factory = MagicMock(return_value=mock_session)
-        mock_session.__enter__ = MagicMock(return_value=mock_session)
-        mock_session.__exit__ = MagicMock(return_value=False)
 
         mock_cache = MagicMock()
         mock_cache.get.return_value = None  # Cache miss

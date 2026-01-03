@@ -241,8 +241,8 @@ class SearchService:
             LIMIT :limit OFFSET :offset
         """)
 
-        with self.session_factory() as session:
-            result = session.execute(
+        async with self.session_factory() as session:
+            result = await session.execute(
                 sql,
                 {
                     "cutoff_time": cutoff_time,
