@@ -1483,8 +1483,8 @@ All services MUST follow this pattern:
 | **Dependencies** | WS-7.4 |
 | **Parallel With** | WS-8.2 |
 | **Effort** | M |
-| **Status** | Not Started |
-| **Started** | - |
+| **Status** | In Progress |
+| **Started** | 2026-01-04 |
 | **Completed** | - |
 
 **Bug Report:**
@@ -1654,7 +1654,7 @@ Currently re-fetches same messages each collection cycle because there's no trac
 | WS-7.3 | Search Service Injection Bug Fix | WS-7.1 | S | Complete |
 | WS-7.4 | TopicService Injection Bug Fix | WS-7.3 | S | Complete |
 | WS-8.1 | Wire Celery Tasks to ContentCollector | WS-7.4 | M | Not Started |
-| WS-8.2 | Resume-from-Last-Point Tracking | WS-8.1 | M | Not Started |
+| WS-8.2 | Resume-from-Last-Point Tracking | WS-8.1 | M | In Progress |
 | WS-8.3 | Roadmap Sync | None | S | Complete |
 
 ---
