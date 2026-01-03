@@ -117,6 +117,63 @@ without ever calling the Telegram API.
 
 ---
 
+## Batch 7.3 (Complete) - Search Service Injection Bug
+
+### Phase 7.3.1: Fix Search Service Dependency Injection Bug
+- **Status:** Complete
+- **Started:** 2026-01-04
+- **Completed:** 2026-01-04
+- **Tasks:**
+  - [x] Investigate why search_service is None (not being created)
+  - [x] Create search service factory function in __main__.py
+  - [x] Add search service to log_service_status() for startup visibility
+  - [x] Inject search service into create_bot_from_env() call
+  - [x] Update search_handlers.py error message to indicate configuration issue
+  - [x] Add unit tests for search service injection scenarios
+- **Effort:** S
+- **Done When:**
+  - /search command works when database is properly configured
+  - Clear status message shown at startup about search service availability
+  - Helpful error message to user if search commands used without proper config
+  - Unit tests verify search service dependency injection behavior
+
+**Root Cause Analysis:**
+```
+File: src/tnse/bot/__main__.py
+
+# search_service is NEVER created or injected!
+def main() -> int:
+    # ...
+    channel_service = create_channel_service()  # This is created
+    # search_service = ???  <-- NOT CREATED
+
+    application = create_bot_from_env(
+        channel_service=channel_service,
+        db_session_factory=db_session_factory,
+        # search_service=???  <-- NOT PASSED
+    )
+```
+
+```
+File: src/tnse/bot/search_handlers.py
+
+async def search_command(...):
+    search_service = context.bot_data.get("search_service")  # Returns None
+
+    if not search_service:
+        # THIS ERROR IS SHOWN
+        logger.error("Search service not configured in bot_data")
+        return
+```
+
+**Solution Approach:**
+1. Create create_search_service() factory function similar to create_channel_service()
+2. Add search service to log_service_status() function
+3. Create and inject search service in main()
+4. Improve error messages in search_handlers.py
+
+---
+
 ## Backlog
 
 - [ ] Phase 5 LLM Integration (optional)
