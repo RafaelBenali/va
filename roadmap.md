@@ -1483,34 +1483,34 @@ All services MUST follow this pattern:
 | **Dependencies** | WS-7.4 |
 | **Parallel With** | WS-8.2 |
 | **Effort** | M |
-| **Status** | In Progress |
+| **Status** | Complete |
 | **Started** | 2026-01-04 |
-| **Completed** | - |
+| **Completed** | 2026-01-04 |
 
 **Bug Report:**
 Celery tasks are stubs that return hardcoded zeros. No automatic content collection is happening.
 
 **Tasks:**
-- [ ] Audit current Celery task implementations to identify stub code
-- [ ] Create ContentCollector service factory function
-- [ ] Wire `collect_channel_content` task to ContentCollector.collect()
-- [ ] Wire `collect_all_channels` task to iterate channels and call ContentCollector
-- [ ] Add proper error handling and retry logic
-- [ ] Add metrics/logging for collection job status
-- [ ] Add unit tests for wired Celery tasks
-- [ ] Integration test: verify content actually stored in database after collection
+- [x] Audit current Celery task implementations to identify stub code
+- [x] Create ContentCollector service factory function
+- [x] Wire `collect_channel_content` task to ContentCollector.collect()
+- [x] Wire `collect_all_channels` task to iterate channels and call ContentCollector
+- [x] Add proper error handling and retry logic
+- [x] Add metrics/logging for collection job status
+- [x] Add unit tests for wired Celery tasks
+- [x] Integration test: verify content actually stored in database after collection
 
 **Affected Files:**
-- `src/tnse/tasks/content_tasks.py`
-- `src/tnse/services/content_collector.py`
-- `src/tnse/bot/__main__.py` (if service injection needed)
+- `src/tnse/pipeline/tasks.py`
+- `src/tnse/pipeline/collector.py`
+- `src/tnse/pipeline/storage.py`
 
 **Acceptance Criteria:**
-- [ ] Celery beat scheduler triggers content collection every 15-30 minutes
-- [ ] Content actually fetched from Telegram channels
-- [ ] Content stored in database with proper schema
-- [ ] Collection metrics logged (channels processed, posts collected, errors)
-- [ ] Failed collections retry with exponential backoff
+- [x] Celery beat scheduler triggers content collection every 15-30 minutes
+- [x] Content actually fetched from Telegram channels
+- [x] Content stored in database with proper schema
+- [x] Collection metrics logged (channels processed, posts collected, errors)
+- [x] Failed collections retry with exponential backoff
 
 ---
 
@@ -1524,34 +1524,36 @@ Celery tasks are stubs that return hardcoded zeros. No automatic content collect
 | **Dependencies** | WS-8.1 |
 | **Parallel With** | WS-8.1 |
 | **Effort** | M |
-| **Status** | Not Started |
-| **Started** | - |
-| **Completed** | - |
+| **Status** | Complete |
+| **Started** | 2026-01-04 |
+| **Completed** | 2026-01-04 |
+| **Assigned** | Claude Code |
 
 **Bug Report:**
 Currently re-fetches same messages each collection cycle because there's no tracking of what was already collected.
 
 **Tasks:**
-- [ ] Add `last_collected_message_id` column to channels table (migration)
-- [ ] Update ContentCollector to read last_collected_message_id before fetching
-- [ ] Pass min_id parameter to Telegram API to fetch only new messages
-- [ ] Update last_collected_message_id after successful collection
-- [ ] Handle edge cases: channel reset, message deletion, gaps
-- [ ] Add unit tests for resume tracking logic
-- [ ] Integration test: verify only new messages collected on second run
+- [x] Add `last_collected_message_id` column to channels table (migration)
+- [x] Update ContentCollector to read last_collected_message_id before fetching
+- [x] Pass min_id parameter to Telegram API to fetch only new messages
+- [x] Update last_collected_message_id after successful collection
+- [x] Handle edge cases: channel reset, message deletion, gaps
+- [x] Add unit tests for resume tracking logic
+- [x] Integration test: verify only new messages collected on second run
 
 **Affected Files:**
-- `alembic/versions/` (new migration)
-- `src/tnse/models/channel.py`
-- `src/tnse/services/content_collector.py`
-- `src/tnse/telegram/client.py` (if min_id parameter needed)
+- `alembic/versions/add_last_collected_message_id.py` (new migration)
+- `src/tnse/db/models.py` (updated Channel model)
+- `src/tnse/pipeline/collector.py` (updated collect_channel_messages)
+- `tests/unit/pipeline/test_resume_tracking.py` (new)
+- `tests/integration/test_resume_tracking_integration.py` (new)
 
 **Acceptance Criteria:**
-- [ ] First collection fetches all messages in 24-hour window
-- [ ] Subsequent collections only fetch new messages since last run
-- [ ] Database stores last_collected_message_id per channel
-- [ ] Collection time significantly reduced on repeat runs
-- [ ] Edge cases handled gracefully (no crashes on gaps/deletions)
+- [x] First collection fetches all messages in 24-hour window
+- [x] Subsequent collections only fetch new messages since last run
+- [x] Database stores last_collected_message_id per channel
+- [x] Collection time significantly reduced on repeat runs
+- [x] Edge cases handled gracefully (no crashes on gaps/deletions)
 
 ---
 
@@ -1653,8 +1655,8 @@ Currently re-fetches same messages each collection cycle because there's no trac
 | WS-7.2 | TelethonClient Auto-Connect Bug Fix | WS-7.1 | S | Complete |
 | WS-7.3 | Search Service Injection Bug Fix | WS-7.1 | S | Complete |
 | WS-7.4 | TopicService Injection Bug Fix | WS-7.3 | S | Complete |
-| WS-8.1 | Wire Celery Tasks to ContentCollector | WS-7.4 | M | Not Started |
-| WS-8.2 | Resume-from-Last-Point Tracking | WS-8.1 | M | In Progress |
+| WS-8.1 | Wire Celery Tasks to ContentCollector | WS-7.4 | M | Complete |
+| WS-8.2 | Resume-from-Last-Point Tracking | WS-8.1 | M | Complete |
 | WS-8.3 | Roadmap Sync | None | S | Complete |
 
 ---
