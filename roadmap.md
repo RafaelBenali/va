@@ -1292,7 +1292,310 @@ Found 47 results (showing 1-5)
         |
         v
   [MODERNIZATION COMPLETE]
+        |
+        v
+[WS-7.1: Bot DI Bug Fix]
+        |
+        v
+  [BUG FIX COMPLETE]
 ```
+
+---
+
+## Phase 7: Critical Bug Fixes (Week 13)
+
+**Theme:** Fix critical bugs blocking core functionality
+
+**Goal:** Ensure channel management commands work correctly with proper dependency injection
+
+### Batch 7.1 (Current) - Critical Bug Fix
+
+---
+
+#### WS-7.1: Bot Service Dependency Injection Bug Fix
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-7.1 |
+| **Name** | Fix Bot Service Dependency Injection |
+| **Description** | Fix the bug where channel_service and db_session_factory are not properly injected into bot_data, causing /addchannel to fail |
+| **Dependencies** | WS-6.10 |
+| **Parallel With** | None |
+| **Effort** | S |
+| **Status** | Complete |
+| **Started** | 2026-01-04 |
+| **Completed** | 2026-01-04 |
+
+**Tasks:**
+- [x] Add startup validation in `__main__.py` to check required vs optional services
+- [x] Log clear warning at startup if Telegram API credentials are missing
+- [x] Update `channel_handlers.py` to provide better error messages indicating configuration issues
+- [x] Add environment variable check at bot startup with helpful error message
+- [x] Add unit tests for service injection scenarios
+- [x] Update documentation with required environment variables for channel commands
+
+**Acceptance Criteria:**
+- [x] /addchannel works when TELEGRAM_API_ID and TELEGRAM_API_HASH are configured
+- [x] Clear error message at startup if required credentials are missing
+- [x] Helpful error message to user if they try to use channel commands without proper config
+- [x] Unit tests verify dependency injection behavior
+- [x] Documentation updated with required environment variables
+
+---
+
+#### WS-7.2: TelethonClient Auto-Connect Bug Fix
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-7.2 |
+| **Name** | Fix TelethonClient Not Connected Bug |
+| **Description** | Fix TelethonClient to auto-connect when API methods are called |
+| **Dependencies** | WS-7.1 |
+| **Parallel With** | None |
+| **Effort** | S |
+| **Status** | Complete |
+| **Started** | 2026-01-04 |
+| **Completed** | 2026-01-04 |
+
+**Tasks:**
+- [x] Write failing test reproducing the connection bug
+- [x] Fix TelethonClient to auto-connect when get_channel is called
+- [x] Fix TelethonClient to auto-connect when get_messages is called
+- [x] Update devlog with fix details
+
+**Acceptance Criteria:**
+- [x] /addchannel command successfully validates real public channels
+- [x] Client auto-connects when API calls require connection
+- [x] All existing tests pass
+
+---
+
+#### WS-7.3: Search Service Injection Bug Fix
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-7.3 |
+| **Name** | Fix Search Service Dependency Injection Bug |
+| **Description** | Create and inject search service into bot application |
+| **Dependencies** | WS-7.1 |
+| **Parallel With** | WS-7.2 |
+| **Effort** | S |
+| **Status** | Complete |
+| **Started** | 2026-01-04 |
+| **Completed** | 2026-01-04 |
+
+**Tasks:**
+- [x] Create search service factory function in __main__.py
+- [x] Add search service to log_service_status() for startup visibility
+- [x] Inject search service into create_bot_from_env() call
+- [x] Update search_handlers.py error message to indicate configuration issue
+- [x] Add unit tests for search service injection scenarios
+
+**Acceptance Criteria:**
+- [x] /search command works when database is properly configured
+- [x] Clear status message shown at startup about search service availability
+- [x] Helpful error message to user if search commands used without proper config
+- [x] Unit tests verify search service dependency injection behavior
+
+---
+
+#### WS-7.4: TopicService Injection Bug Fix
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-7.4 |
+| **Name** | Fix TopicService Dependency Injection Bug |
+| **Description** | Create and inject topic service into bot application so /savetopic, /topics, /topic, /deletetopic commands work |
+| **Dependencies** | WS-7.3 |
+| **Parallel With** | None |
+| **Effort** | S |
+| **Status** | In Progress |
+| **Started** | 2026-01-04 |
+| **Completed** | - |
+
+**Bug Report:**
+All topic-related commands (/savetopic, /topics, /topic, /deletetopic) are broken because TopicService is not injected into bot_data.
+
+**Required Pattern (Service Injection Standard):**
+All services MUST follow this pattern:
+1. Create factory function: `create_<service>_service() -> Service | None`
+2. Log at startup via `log_service_status()`
+3. Inject into application via `create_bot_from_env()`
+
+**Tasks:**
+- [ ] Create `create_topic_service()` factory function in `__main__.py`
+- [ ] Add topic service to `log_service_status()` for startup visibility
+- [ ] Inject topic service into `create_bot_from_env()` call
+- [ ] Update topic_handlers.py error messages to indicate configuration issue
+- [ ] Add unit tests for topic service injection scenarios
+- [ ] Verify all topic commands work after fix
+
+**Affected Files:**
+- `src/tnse/bot/__main__.py`
+- `src/tnse/bot/topic_handlers.py`
+- `src/tnse/bot/application.py`
+
+**Acceptance Criteria:**
+- [ ] /savetopic command works correctly
+- [ ] /topics command lists saved topics
+- [ ] /topic <name> runs saved topic search
+- [ ] /deletetopic command works correctly
+- [ ] Clear status message shown at startup about topic service availability
+- [ ] Unit tests verify topic service dependency injection behavior
+
+---
+
+### Phase 7 Gate
+
+| Criterion | Target |
+|-----------|--------|
+| Channel commands working | /addchannel, /removechannel work correctly |
+| Search commands working | /search returns results |
+| Topic commands working | /savetopic, /topics, /topic, /deletetopic work correctly |
+| Configuration validated | Startup checks for required env vars |
+| Tests passing | All dependency injection tests pass |
+| Documentation updated | Troubleshooting guide addresses these issues |
+
+**Service Injection Standard (MUST follow for all services):**
+1. Factory function created: `create_<service>_service()`
+2. Logged at startup via `log_service_status()`
+3. Injected into application via `create_bot_from_env()`
+
+---
+
+## Phase 8: Content Collection Pipeline Fixes (Week 14)
+
+**Theme:** Fix critical issues with automatic content collection
+
+**Goal:** Make Celery tasks actually collect content and track progress to avoid re-fetching
+
+### Batch 8.1 (Current) - Parallel Execution
+
+---
+
+#### WS-8.1: Wire Celery Tasks to ContentCollector
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-8.1 |
+| **Name** | Wire Celery Tasks to ContentCollector |
+| **Description** | Celery tasks currently return hardcoded zeros - wire them to actually call ContentCollector |
+| **Dependencies** | WS-7.4 |
+| **Parallel With** | WS-8.2 |
+| **Effort** | M |
+| **Status** | Not Started |
+| **Started** | - |
+| **Completed** | - |
+
+**Bug Report:**
+Celery tasks are stubs that return hardcoded zeros. No automatic content collection is happening.
+
+**Tasks:**
+- [ ] Audit current Celery task implementations to identify stub code
+- [ ] Create ContentCollector service factory function
+- [ ] Wire `collect_channel_content` task to ContentCollector.collect()
+- [ ] Wire `collect_all_channels` task to iterate channels and call ContentCollector
+- [ ] Add proper error handling and retry logic
+- [ ] Add metrics/logging for collection job status
+- [ ] Add unit tests for wired Celery tasks
+- [ ] Integration test: verify content actually stored in database after collection
+
+**Affected Files:**
+- `src/tnse/tasks/content_tasks.py`
+- `src/tnse/services/content_collector.py`
+- `src/tnse/bot/__main__.py` (if service injection needed)
+
+**Acceptance Criteria:**
+- [ ] Celery beat scheduler triggers content collection every 15-30 minutes
+- [ ] Content actually fetched from Telegram channels
+- [ ] Content stored in database with proper schema
+- [ ] Collection metrics logged (channels processed, posts collected, errors)
+- [ ] Failed collections retry with exponential backoff
+
+---
+
+#### WS-8.2: Resume-from-Last-Point Tracking
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-8.2 |
+| **Name** | Resume-from-Last-Point Tracking |
+| **Description** | Track last collected message ID per channel to avoid re-fetching same content |
+| **Dependencies** | WS-8.1 |
+| **Parallel With** | WS-8.1 |
+| **Effort** | M |
+| **Status** | Not Started |
+| **Started** | - |
+| **Completed** | - |
+
+**Bug Report:**
+Currently re-fetches same messages each collection cycle because there's no tracking of what was already collected.
+
+**Tasks:**
+- [ ] Add `last_collected_message_id` column to channels table (migration)
+- [ ] Update ContentCollector to read last_collected_message_id before fetching
+- [ ] Pass min_id parameter to Telegram API to fetch only new messages
+- [ ] Update last_collected_message_id after successful collection
+- [ ] Handle edge cases: channel reset, message deletion, gaps
+- [ ] Add unit tests for resume tracking logic
+- [ ] Integration test: verify only new messages collected on second run
+
+**Affected Files:**
+- `alembic/versions/` (new migration)
+- `src/tnse/models/channel.py`
+- `src/tnse/services/content_collector.py`
+- `src/tnse/telegram/client.py` (if min_id parameter needed)
+
+**Acceptance Criteria:**
+- [ ] First collection fetches all messages in 24-hour window
+- [ ] Subsequent collections only fetch new messages since last run
+- [ ] Database stores last_collected_message_id per channel
+- [ ] Collection time significantly reduced on repeat runs
+- [ ] Edge cases handled gracefully (no crashes on gaps/deletions)
+
+---
+
+### Batch 8.2 (After WS-7.4 Complete) - Documentation Sync
+
+---
+
+#### WS-8.3: Roadmap Sync
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-8.3 |
+| **Name** | Roadmap Sync |
+| **Description** | Ensure root roadmap.md and plans/roadmap.md are synchronized |
+| **Dependencies** | None |
+| **Parallel With** | None |
+| **Effort** | S |
+| **Status** | Complete |
+| **Started** | 2026-01-04 |
+| **Completed** | 2026-01-04 |
+
+**Tasks:**
+- [x] Read both roadmap.md (root) and plans/roadmap.md
+- [x] Fix WS-7.1 status inconsistency (was "Not Started" in root, "Complete" in plans)
+- [x] Add WS-7.2, WS-7.3, WS-7.4 to root roadmap
+- [x] Add WS-8.1, WS-8.2, WS-8.3 to both roadmaps
+- [x] Document service injection standard in both roadmaps
+- [x] Update plans/roadmap.md with new work streams
+
+**Acceptance Criteria:**
+- [x] Both roadmaps show same status for all work streams
+- [x] All new work streams (WS-7.4, WS-8.x) documented in both files
+- [x] Service injection standard documented
+
+---
+
+### Phase 8 Gate
+
+| Criterion | Target |
+|-----------|--------|
+| Content collection working | Celery tasks actually collect content |
+| Resume tracking | Only new messages fetched |
+| Roadmaps synchronized | Both files show consistent state |
+| Database populated | Posts table has real content |
 
 ---
 
@@ -1305,34 +1608,54 @@ Found 47 results (showing 1-5)
 | Phase 3: Enhanced Features | 2 weeks | Topics, templates, polish |
 | Phase 4: Render.com Deployment | 1 week | **PRODUCTION** - Bot deployed on Render.com |
 | Phase 5: LLM (Optional) | 2 weeks | Semantic analysis |
-| **Total (without LLM)** | **9 weeks** | Full production deployment |
-| **Total (with LLM)** | **11 weeks** | Full implementation with AI |
+| Phase 6: Codebase Modernization | 2-3 weeks | December 2025 technology refresh |
+| Phase 7: Critical Bug Fixes | 1 week | Dependency injection fixes (channel, search, topic services) |
+| Phase 8: Content Collection Fixes | 1-2 weeks | Wire Celery tasks, resume tracking |
+| **Total (without LLM)** | **11-12 weeks** | Full production deployment with working collection |
+| **Total (with LLM)** | **13-14 weeks** | Full implementation with AI |
 
 ---
 
 ## Work Stream Quick Reference
 
-| ID | Name | Dependencies | Effort |
-|----|------|--------------|--------|
-| WS-1.1 | Infrastructure Setup | None | M |
-| WS-1.2 | Database Schema | None | S |
-| WS-1.3 | Telegram Bot Foundation | WS-1.1 | M |
-| WS-1.4 | Telegram API Integration | WS-1.1, WS-1.2 | M |
-| WS-1.5 | Channel Management (Bot) | WS-1.3, WS-1.4 | S |
-| WS-1.6 | Content Collection Pipeline | WS-1.4, WS-1.2 | M |
-| WS-2.1 | Engagement Metrics | WS-1.6 | M |
-| WS-2.2 | Keyword Search Engine | WS-1.6 | M |
-| WS-2.3 | Ranking Algorithm | WS-2.1, WS-2.2 | S |
-| WS-2.4 | Search Bot Commands | WS-2.3, WS-1.3 | M |
-| WS-2.5 | Export Functionality | WS-2.4 | S |
-| WS-3.1 | Saved Topics | WS-2.4 | S |
-| WS-3.2 | Advanced Channel Management | WS-1.5 | S |
-| WS-3.3 | Polish and Testing | All | M |
-| WS-4.1 | Render.com Configuration | WS-3.3 | M |
-| WS-4.2 | Production Environment Configuration | WS-4.1 | S |
-| WS-4.3 | Deployment Documentation | WS-4.1, WS-4.2 | S |
-| WS-5.1 | LLM Integration (Optional) | WS-2.4 | M |
-| WS-5.2 | Semantic Topic Analysis (Optional) | WS-5.1 | M |
+| ID | Name | Dependencies | Effort | Status |
+|----|------|--------------|--------|--------|
+| WS-1.1 | Infrastructure Setup | None | M | Complete |
+| WS-1.2 | Database Schema | None | S | Complete |
+| WS-1.3 | Telegram Bot Foundation | WS-1.1 | M | Complete |
+| WS-1.4 | Telegram API Integration | WS-1.1, WS-1.2 | M | Complete |
+| WS-1.5 | Channel Management (Bot) | WS-1.3, WS-1.4 | S | Complete |
+| WS-1.6 | Content Collection Pipeline | WS-1.4, WS-1.2 | M | Complete |
+| WS-2.1 | Engagement Metrics | WS-1.6 | M | Complete |
+| WS-2.2 | Keyword Search Engine | WS-1.6 | M | Complete |
+| WS-2.3 | Ranking Algorithm | WS-2.1, WS-2.2 | S | Complete |
+| WS-2.4 | Search Bot Commands | WS-2.3, WS-1.3 | M | Complete |
+| WS-2.5 | Export Functionality | WS-2.4 | S | Complete |
+| WS-3.1 | Saved Topics | WS-2.4 | S | Complete |
+| WS-3.2 | Advanced Channel Management | WS-1.5 | S | Complete |
+| WS-3.3 | Polish and Testing | All | M | Complete |
+| WS-4.1 | Render.com Configuration | WS-3.3 | M | Complete |
+| WS-4.2 | Production Environment Configuration | WS-4.1 | S | Complete |
+| WS-4.3 | Deployment Documentation | WS-4.1, WS-4.2 | S | Complete |
+| WS-5.1 | LLM Integration (Optional) | WS-2.4 | M | Not Started |
+| WS-5.2 | Semantic Topic Analysis (Optional) | WS-5.1 | M | Not Started |
+| WS-6.1 | Dependency Modernization | WS-4.3 | M | Complete |
+| WS-6.2 | Security Audit | WS-4.3 | M | Complete |
+| WS-6.3 | Python Modernization | WS-6.1 | M | Complete |
+| WS-6.4 | API and Database Review | WS-6.1 | M | Complete |
+| WS-6.5 | Infrastructure Modernization | WS-6.3, WS-6.4 | S | Complete |
+| WS-6.6 | Documentation Refresh | WS-6.3, WS-6.4 | S | Complete |
+| WS-6.7 | Telegram Bot Implementation Audit | WS-6.1, WS-6.2 | M | Complete |
+| WS-6.8 | Bot Library Modernization | WS-6.1, WS-6.2 | M | Complete |
+| WS-6.9 | Bot Feature Enhancement | WS-6.7, WS-6.8 | M | Complete |
+| WS-6.10 | Bot Testing and Documentation | WS-6.9 | S | Complete |
+| WS-7.1 | Bot Service Dependency Injection Bug Fix | WS-6.10 | S | Complete |
+| WS-7.2 | TelethonClient Auto-Connect Bug Fix | WS-7.1 | S | Complete |
+| WS-7.3 | Search Service Injection Bug Fix | WS-7.1 | S | Complete |
+| WS-7.4 | TopicService Injection Bug Fix | WS-7.3 | S | Not Started |
+| WS-8.1 | Wire Celery Tasks to ContentCollector | WS-7.4 | M | Not Started |
+| WS-8.2 | Resume-from-Last-Point Tracking | WS-8.1 | M | Not Started |
+| WS-8.3 | Roadmap Sync | None | S | Complete |
 
 ---
 
