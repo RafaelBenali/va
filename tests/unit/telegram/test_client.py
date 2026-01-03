@@ -357,3 +357,149 @@ class TestMediaInfo:
             mime_type="application/pdf",
         )
         assert info.mime_type == "application/pdf"
+
+
+class TestTelethonClientAutoConnect:
+    """Tests for TelethonClient auto-connect behavior.
+
+    WS-7.2: Fix channel validation connection bug.
+
+    The TelethonClient should auto-connect when API methods are called
+    if not already connected. This prevents the bug where get_channel()
+    returns None simply because connect() was never called.
+    """
+
+    @pytest.fixture
+    def client_config(self) -> Any:
+        """Provide a test client configuration."""
+        from src.tnse.telegram.client import TelegramClientConfig
+
+        return TelegramClientConfig(
+            api_id="12345",
+            api_hash="test_hash",
+            session_name="test_session",
+        )
+
+    @pytest.mark.asyncio
+    async def test_get_channel_auto_connects_when_not_connected(
+        self, client_config: Any
+    ):
+        """Test that get_channel auto-connects if client is not connected.
+
+        This test reproduces the bug where get_channel returns None because
+        the client was never explicitly connected.
+        """
+        from src.tnse.telegram.client import ChannelInfo, TelethonClient
+
+        client = TelethonClient(client_config)
+
+        # Initially not connected
+        assert client.is_connected is False
+
+        # Create a mock entity that get_entity would return
+        mock_entity = MagicMock()
+        mock_entity.id = 123456789
+        mock_entity.username = "test_channel"
+        mock_entity.title = "Test Channel"
+        mock_entity.restricted = False
+
+        # Create a mock full channel response
+        mock_full_channel = MagicMock()
+        mock_full_channel.full_chat.participants_count = 10000
+        mock_full_channel.full_chat.about = "Test description"
+
+        with patch.object(client, "_client") as mock_telethon:
+            # Set up the mock to simulate connection
+            mock_telethon.connect = AsyncMock()
+            mock_telethon.is_connected = MagicMock(return_value=True)
+            mock_telethon.get_entity = AsyncMock(return_value=mock_entity)
+            mock_telethon.__call__ = AsyncMock(return_value=mock_full_channel)
+
+            result = await client.get_channel("test_channel")
+
+            # The client should have auto-connected
+            mock_telethon.connect.assert_awaited_once()
+
+            # And should have returned channel info, not None
+            assert result is not None
+            assert isinstance(result, ChannelInfo)
+            assert result.username == "test_channel"
+
+    @pytest.mark.asyncio
+    async def test_get_channel_does_not_reconnect_if_already_connected(
+        self, client_config: Any
+    ):
+        """Test that get_channel does not reconnect if already connected."""
+        from src.tnse.telegram.client import TelethonClient
+
+        client = TelethonClient(client_config)
+
+        # Create mock entity and full channel
+        mock_entity = MagicMock()
+        mock_entity.id = 123456789
+        mock_entity.username = "test_channel"
+        mock_entity.title = "Test Channel"
+        mock_entity.restricted = False
+
+        mock_full_channel = MagicMock()
+        mock_full_channel.full_chat.participants_count = 10000
+        mock_full_channel.full_chat.about = "Test description"
+
+        with patch.object(client, "_client") as mock_telethon:
+            # Simulate already connected
+            mock_telethon.connect = AsyncMock()
+            mock_telethon.is_connected = MagicMock(return_value=True)
+            mock_telethon.get_entity = AsyncMock(return_value=mock_entity)
+            mock_telethon.__call__ = AsyncMock(return_value=mock_full_channel)
+
+            # Pre-connect the client
+            client._connected = True
+
+            result = await client.get_channel("test_channel")
+
+            # Should NOT have called connect again
+            mock_telethon.connect.assert_not_awaited()
+
+            # But should still return channel info
+            assert result is not None
+
+    @pytest.mark.asyncio
+    async def test_get_messages_auto_connects_when_not_connected(
+        self, client_config: Any
+    ):
+        """Test that get_messages auto-connects if client is not connected."""
+        from datetime import datetime, timezone
+
+        from src.tnse.telegram.client import TelethonClient
+
+        client = TelethonClient(client_config)
+
+        # Initially not connected
+        assert client.is_connected is False
+
+        # Create mock messages
+        mock_message = MagicMock()
+        mock_message.id = 12345
+        mock_message.message = "Test message"
+        mock_message.date = datetime.now(timezone.utc)
+        mock_message.views = 1000
+        mock_message.forwards = 10
+        mock_message.replies = None
+        mock_message.reactions = None
+        mock_message.media = None
+        mock_message.fwd_from = None
+
+        with patch.object(client, "_client") as mock_telethon:
+            # Set up the mock to simulate connection
+            mock_telethon.connect = AsyncMock()
+            mock_telethon.is_connected = MagicMock(return_value=True)
+            mock_telethon.get_messages = AsyncMock(return_value=[mock_message])
+
+            result = await client.get_messages(channel_id=123456789, limit=10)
+
+            # The client should have auto-connected
+            mock_telethon.connect.assert_awaited_once()
+
+            # And should have returned messages, not empty list
+            assert len(result) == 1
+            assert result[0].message_id == 12345
