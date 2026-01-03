@@ -125,11 +125,28 @@ async def addchannel_command(
     channel_service = context.bot_data.get("channel_service")
     db_session_factory = context.bot_data.get("db_session_factory")
 
-    if not channel_service or not db_session_factory:
+    if not channel_service:
         await update.message.reply_text(
-            "Channel service is not available. Please try again later."
+            "Channel management is not configured.\n\n"
+            "The Telegram API credentials (TELEGRAM_API_ID and TELEGRAM_API_HASH) "
+            "are required for channel validation.\n\n"
+            "Please contact the administrator to configure these settings."
         )
-        logger.error("Channel service or database not configured in bot_data")
+        logger.error(
+            "Channel service not configured in bot_data",
+            hint="Set TELEGRAM_API_ID and TELEGRAM_API_HASH environment variables"
+        )
+        return
+
+    if not db_session_factory:
+        await update.message.reply_text(
+            "Database is not configured.\n\n"
+            "Please contact the administrator to check the database configuration."
+        )
+        logger.error(
+            "Database session factory not configured in bot_data",
+            hint="Check POSTGRES_* environment variables"
+        )
         return
 
     # Validate the channel
@@ -269,9 +286,13 @@ async def removechannel_command(
 
     if not db_session_factory:
         await update.message.reply_text(
-            "Database is not available. Please try again later."
+            "Database is not configured.\n\n"
+            "Please contact the administrator to check the database configuration."
         )
-        logger.error("Database session factory not configured in bot_data")
+        logger.error(
+            "Database session factory not configured in bot_data",
+            hint="Check POSTGRES_* environment variables"
+        )
         return
 
     try:
@@ -345,9 +366,13 @@ async def channels_command(
 
     if not db_session_factory:
         await update.message.reply_text(
-            "Database is not available. Please try again later."
+            "Database is not configured.\n\n"
+            "Please contact the administrator to check the database configuration."
         )
-        logger.error("Database session factory not configured in bot_data")
+        logger.error(
+            "Database session factory not configured in bot_data",
+            hint="Check POSTGRES_* environment variables"
+        )
         return
 
     try:
@@ -445,9 +470,13 @@ async def channelinfo_command(
 
     if not db_session_factory:
         await update.message.reply_text(
-            "Database is not available. Please try again later."
+            "Database is not configured.\n\n"
+            "Please contact the administrator to check the database configuration."
         )
-        logger.error("Database session factory not configured in bot_data")
+        logger.error(
+            "Database session factory not configured in bot_data",
+            hint="Check POSTGRES_* environment variables"
+        )
         return
 
     try:

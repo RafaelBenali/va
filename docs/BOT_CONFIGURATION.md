@@ -20,9 +20,25 @@ This document explains how to configure the Telegram News Search Engine (TNSE) b
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `TELEGRAM_BOT_TOKEN` | Bot token from BotFather | `123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11` |
+| `TELEGRAM_BOT_TOKEN` | Bot token from BotFather (required for bot to start) | `123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11` |
+
+### Required for Channel Management
+
+The following variables are **required for `/addchannel` and `/import` commands**. Without these, the bot will start but channel management features will be disabled:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
 | `TELEGRAM_API_ID` | Telegram API ID from my.telegram.org | `12345678` |
 | `TELEGRAM_API_HASH` | Telegram API hash from my.telegram.org | `abcdef1234567890abcdef1234567890` |
+
+**Note:** If these are not set, the bot will log a warning at startup and channel management commands will show a configuration error message to users.
+
+**How to get Telegram API credentials:**
+1. Go to [my.telegram.org](https://my.telegram.org)
+2. Log in with your Telegram phone number
+3. Click on "API development tools"
+4. Create a new application (if needed)
+5. Copy the `api_id` and `api_hash` values
 
 ### Application Settings
 

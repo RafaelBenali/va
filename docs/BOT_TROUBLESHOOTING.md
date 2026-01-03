@@ -48,12 +48,30 @@ Use these commands to quickly diagnose issues:
 2. Contact administrator to check service status
 3. Administrator checks: `docker compose ps` to verify all services are running
 
-### "Channel service is not available"
+### "Channel management is not configured"
 
-**Cause:** Channel validation service is not connected.
+**Cause:** Telegram API credentials (TELEGRAM_API_ID and TELEGRAM_API_HASH) are not configured.
 
 **Solutions:**
-1. Wait a few minutes and try again
+1. **For administrators:** Set the `TELEGRAM_API_ID` and `TELEGRAM_API_HASH` environment variables
+2. Get API credentials from [my.telegram.org](https://my.telegram.org)
+3. Restart the bot after setting the environment variables
+
+**How to get Telegram API credentials:**
+1. Go to [my.telegram.org](https://my.telegram.org)
+2. Log in with your Telegram phone number
+3. Click on "API development tools"
+4. Create a new application (if you don't have one)
+5. Copy the `api_id` and `api_hash` values
+
+**Note:** This error appears when trying to use `/addchannel` or `/import` commands. Other bot features like `/search` and `/channels` may still work if the database is configured.
+
+### "Channel service is not available" (legacy message)
+
+**Cause:** Channel validation service is not connected. This is typically due to missing Telegram API credentials.
+
+**Solutions:**
+1. Check if `TELEGRAM_API_ID` and `TELEGRAM_API_HASH` are set
 2. Contact administrator to verify Telegram API credentials
 3. Check if Telegram is experiencing outages
 
@@ -450,6 +468,41 @@ When contacting your administrator, include:
 2. **Exact error message** (screenshot if possible)
 3. **Steps to reproduce** the issue
 4. **Timestamp** when the issue occurred
+
+---
+
+## Startup Service Status
+
+When the bot starts, it logs the status of all services. Look for these log messages:
+
+### All Services Available (Normal)
+```
+INFO  Channel service initialized status=available feature="/addchannel, /channelinfo enabled"
+INFO  Database connection initialized status=available
+```
+
+### Channel Service Unavailable
+```
+WARNING  Channel service not available - /addchannel command will not work
+         hint="Set TELEGRAM_API_ID and TELEGRAM_API_HASH to enable channel management"
+         disabled_commands=["/addchannel", "/import"]
+```
+
+**Resolution:**
+1. Set `TELEGRAM_API_ID` environment variable
+2. Set `TELEGRAM_API_HASH` environment variable
+3. Restart the bot
+
+### Database Unavailable
+```
+WARNING  Database not available - channel and search features will not work
+         hint="Check database configuration (POSTGRES_* environment variables)"
+```
+
+**Resolution:**
+1. Verify PostgreSQL is running: `docker compose ps`
+2. Check database configuration in `.env` file
+3. Verify connectivity: `docker compose exec db pg_isready`
 
 ---
 
