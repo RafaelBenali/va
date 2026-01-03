@@ -1409,9 +1409,9 @@ Found 47 results (showing 1-5)
 | **Dependencies** | WS-7.3 |
 | **Parallel With** | None |
 | **Effort** | S |
-| **Status** | In Progress |
+| **Status** | Complete |
 | **Started** | 2026-01-04 |
-| **Completed** | - |
+| **Completed** | 2026-01-04 |
 
 **Bug Report:**
 All topic-related commands (/savetopic, /topics, /topic, /deletetopic) are broken because TopicService is not injected into bot_data.
@@ -1423,12 +1423,12 @@ All services MUST follow this pattern:
 3. Inject into application via `create_bot_from_env()`
 
 **Tasks:**
-- [ ] Create `create_topic_service()` factory function in `__main__.py`
-- [ ] Add topic service to `log_service_status()` for startup visibility
-- [ ] Inject topic service into `create_bot_from_env()` call
-- [ ] Update topic_handlers.py error messages to indicate configuration issue
-- [ ] Add unit tests for topic service injection scenarios
-- [ ] Verify all topic commands work after fix
+- [x] Create `create_topic_service()` factory function in `__main__.py`
+- [x] Add topic service to `log_service_status()` for startup visibility
+- [x] Inject topic service into `create_bot_from_env()` call
+- [x] Update topic_handlers.py error messages to indicate configuration issue
+- [x] Add unit tests for topic service injection scenarios
+- [x] Verify all topic commands work after fix
 
 **Affected Files:**
 - `src/tnse/bot/__main__.py`
@@ -1436,12 +1436,12 @@ All services MUST follow this pattern:
 - `src/tnse/bot/application.py`
 
 **Acceptance Criteria:**
-- [ ] /savetopic command works correctly
-- [ ] /topics command lists saved topics
-- [ ] /topic <name> runs saved topic search
-- [ ] /deletetopic command works correctly
-- [ ] Clear status message shown at startup about topic service availability
-- [ ] Unit tests verify topic service dependency injection behavior
+- [x] /savetopic command works correctly
+- [x] /topics command lists saved topics
+- [x] /topic <name> runs saved topic search
+- [x] /deletetopic command works correctly
+- [x] Clear status message shown at startup about topic service availability
+- [x] Unit tests verify topic service dependency injection behavior
 
 ---
 
@@ -1652,7 +1652,7 @@ Currently re-fetches same messages each collection cycle because there's no trac
 | WS-7.1 | Bot Service Dependency Injection Bug Fix | WS-6.10 | S | Complete |
 | WS-7.2 | TelethonClient Auto-Connect Bug Fix | WS-7.1 | S | Complete |
 | WS-7.3 | Search Service Injection Bug Fix | WS-7.1 | S | Complete |
-| WS-7.4 | TopicService Injection Bug Fix | WS-7.3 | S | Not Started |
+| WS-7.4 | TopicService Injection Bug Fix | WS-7.3 | S | Complete |
 | WS-8.1 | Wire Celery Tasks to ContentCollector | WS-7.4 | M | Not Started |
 | WS-8.2 | Resume-from-Last-Point Tracking | WS-8.1 | M | Not Started |
 | WS-8.3 | Roadmap Sync | None | S | Complete |
