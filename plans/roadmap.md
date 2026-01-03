@@ -3,16 +3,17 @@
 ## Batch 7.1 (Current) - Critical Bug Fix
 
 ### Phase 7.1.1: Fix Bot Service Dependency Injection Bug
-- **Status:** In Progress
+- **Status:** Complete
 - **Started:** 2026-01-04
+- **Completed:** 2026-01-04
 - **Tasks:**
-  - [ ] Investigate why channel_service is None (missing TELEGRAM_API_ID/TELEGRAM_API_HASH)
-  - [ ] Add startup validation in __main__.py to check required vs optional services
-  - [ ] Log clear warning at startup if Telegram API credentials are missing
-  - [ ] Update channel_handlers.py error message to indicate configuration issue
-  - [ ] Add startup check with helpful error message for missing credentials
-  - [ ] Add unit tests for service injection scenarios
-  - [ ] Update docs/BOT_TROUBLESHOOTING.md with this issue and solution
+  - [x] Investigate why channel_service is None (missing TELEGRAM_API_ID/TELEGRAM_API_HASH)
+  - [x] Add startup validation in __main__.py to check required vs optional services
+  - [x] Log clear warning at startup if Telegram API credentials are missing
+  - [x] Update channel_handlers.py error message to indicate configuration issue
+  - [x] Add startup check with helpful error message for missing credentials
+  - [x] Add unit tests for service injection scenarios
+  - [x] Update docs/BOT_TROUBLESHOOTING.md with this issue and solution
 - **Effort:** S
 - **Done When:**
   - /addchannel command works when Telegram API credentials are configured
