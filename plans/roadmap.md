@@ -7,7 +7,7 @@
 | WS-7.1 | Bot Service Dependency Injection Bug Fix | Complete | HIGH |
 | WS-7.2 | TelethonClient Auto-Connect Bug Fix | Complete | HIGH |
 | WS-7.3 | Search Service Injection Bug Fix | Complete | HIGH |
-| WS-7.4 | SearchService Async/Sync Context Manager Bug | In Progress | HIGH |
+| WS-7.4 | SearchService Async/Sync Context Manager Bug | Complete | HIGH |
 | WS-7.5 | TopicService Injection Bug Fix | Not Started | HIGH |
 | WS-8.1 | Wire Celery Tasks to ContentCollector | Not Started | HIGH |
 | WS-8.2 | Resume-from-Last-Point Tracking | Not Started | MEDIUM |
@@ -89,18 +89,19 @@
 
 ---
 
-## Batch 7.4 (In Progress) - SearchService Async/Sync Bug
+## Batch 7.4 (Complete) - SearchService Async/Sync Bug
 
 ### Phase 7.4.1: Fix AsyncSession Context Manager Bug
-- **Status:** In Progress
+- **Status:** Complete
 - **Started:** 2026-01-04
+- **Completed:** 2026-01-04
 - **Assigned:** Claude Code
 - **Tasks:**
-  - [ ] Write failing test reproducing the async/sync mismatch bug
-  - [ ] Fix `with self.session_factory()` to `async with self.session_factory()`
-  - [ ] Fix `session.execute()` to `await session.execute()`
-  - [ ] Verify all tests pass
-  - [ ] Update devlog with fix details
+  - [x] Write failing test reproducing the async/sync mismatch bug
+  - [x] Fix `with self.session_factory()` to `async with self.session_factory()`
+  - [x] Fix `session.execute()` to `await session.execute()`
+  - [x] Verify all tests pass (71 search-related tests pass)
+  - [x] Update devlog with fix details
 - **Effort:** S
 - **Done When:**
   - SearchService._execute_search() properly uses async context manager
@@ -125,6 +126,8 @@ The SearchService uses `session_factory` which is an `async_sessionmaker` that r
 
 **Affected Files:**
 - `src/tnse/search/service.py`
+- `tests/unit/search/test_search_service.py` (updated mocks)
+- `tests/unit/search/test_search_service_async.py` (new test file)
 
 ---
 
