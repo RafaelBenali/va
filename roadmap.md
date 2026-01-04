@@ -786,24 +786,40 @@ NOT directly in the text, enabling RAG-like retrieval.
 | **Dependencies** | WS-2.4 (Search) |
 | **Parallel With** | None |
 | **Effort** | S |
-| **Status** | In Progress |
+| **Status** | Complete |
 | **Started** | 2026-01-05 |
-| **Assigned** | Claude Code |
+| **Completed** | 2026-01-05 |
+| **Assigned** | tdd-coder-ws51 |
 
 **Tasks:**
-- [ ] Install `groq` Python SDK
-- [ ] Add Groq settings to `src/tnse/core/config.py` (GROQ_API_KEY, GROQ_MODEL, GROQ_MAX_TOKENS, GROQ_TEMPERATURE)
-- [ ] Create `src/tnse/llm/__init__.py` module
-- [ ] Create `src/tnse/llm/groq_client.py` with async support, JSON mode, error handling
-- [ ] Add unit tests for Groq client
-- [ ] Update `.env.example` with new variables
+- [x] Install `groq` Python SDK
+- [x] Add GroqSettings to `src/tnse/core/config.py`
+- [x] Create `src/tnse/llm/__init__.py` module
+- [x] Create `src/tnse/llm/base.py` with LLMProvider interface
+- [x] Create `src/tnse/llm/groq_client.py` with:
+  - GroqClient async class
+  - JSON mode support
+  - Rate limiting (30 RPM free tier)
+  - Error handling and retries
+  - Token counting in CompletionResult
+- [x] Add 30 unit tests for Groq client
+- [x] Update `.env.example` with new variables
+
+**Affected Files:**
+- `src/tnse/llm/__init__.py`
+- `src/tnse/llm/base.py`
+- `src/tnse/llm/groq_client.py`
+- `src/tnse/core/config.py`
+- `tests/unit/llm/test_groq_client.py`
+- `requirements.txt`
+- `.env.example`
 
 **Acceptance Criteria:**
-- [ ] Groq SDK installed and importable
-- [ ] Configuration validated at startup
-- [ ] Client can make API calls with JSON response mode
-- [ ] Error handling covers rate limits, auth errors, timeouts
-- [ ] Unit tests pass with mocked API responses
+- [x] Groq SDK installed and importable
+- [x] Configuration validated at startup
+- [x] Client can make API calls with JSON response mode
+- [x] Error handling covers rate limits, auth errors, timeouts
+- [x] Unit tests pass with mocked API responses
 
 ---
 
@@ -817,20 +833,29 @@ NOT directly in the text, enabling RAG-like retrieval.
 | **Dependencies** | WS-5.1 |
 | **Parallel With** | None |
 | **Effort** | S |
-| **Status** | Not Started |
+| **Status** | Complete |
+| **Started** | 2026-01-05 |
+| **Completed** | 2026-01-05 |
+| **Assigned** | tdd-coder-ws52 |
 
 **Tasks:**
-- [ ] Create SQLAlchemy model `PostEnrichment` in `src/tnse/db/models.py`
-- [ ] Create SQLAlchemy model `LLMUsageLog` for cost tracking
-- [ ] Create Alembic migration with GIN indexes on keyword arrays
-- [ ] Add relationship from `Post` to `PostEnrichment`
-- [ ] Test migration up/down
+- [x] Create SQLAlchemy model `PostEnrichment` in `src/tnse/db/models.py`
+- [x] Create SQLAlchemy model `LLMUsageLog` for cost tracking
+- [x] Create Alembic migration with GIN indexes on keyword arrays
+- [x] Add relationship from `Post` to `PostEnrichment`
+- [x] Test migration up/down
+
+**Affected Files:**
+- `src/tnse/db/models.py` - Added PostEnrichment and LLMUsageLog models
+- `alembic/versions/b2c3d4e5f6g7_add_post_enrichment_tables.py` - New migration
+- `tests/unit/db/test_post_enrichment_models.py` - 27 unit tests
+- `tests/unit/db/test_post_enrichment_migration.py` - 15 migration tests
 
 **Acceptance Criteria:**
-- [ ] Migration applies successfully (up and down)
-- [ ] Models work with SQLAlchemy async sessions
-- [ ] GIN indexes created for keyword array searches
-- [ ] Relationship navigation works (post.enrichment)
+- [x] Migration applies successfully (up and down)
+- [x] Models work with SQLAlchemy async sessions
+- [x] GIN indexes created for keyword array searches
+- [x] Relationship navigation works (post.enrichment)
 
 ---
 
@@ -1992,7 +2017,7 @@ Currently re-fetches same messages each collection cycle because there's no trac
 | WS-4.1 | Render.com Configuration | WS-3.3 | M | Complete |
 | WS-4.2 | Production Environment Configuration | WS-4.1 | S | Complete |
 | WS-4.3 | Deployment Documentation | WS-4.1, WS-4.2 | S | Complete |
-| WS-5.1 | Groq Client Integration | WS-2.4 | S | Not Started |
+| WS-5.1 | Groq Client Integration | WS-2.4 | S | Complete |
 | WS-5.2 | Database Schema (Post Enrichment) | WS-5.1 | S | Not Started |
 | WS-5.3 | Enrichment Service Core | WS-5.1, WS-5.2 | M | Not Started |
 | WS-5.4 | Celery Enrichment Tasks | WS-5.3, WS-8.1 | M | Not Started |
