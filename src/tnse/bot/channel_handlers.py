@@ -184,58 +184,57 @@ async def addchannel_command(
         from sqlalchemy import select
         from src.tnse.db.models import Channel
 
-        session = db_session_factory()
+        async with db_session_factory() as session:
+            # Check for existing channel by username or telegram_id
+            query = select(Channel).where(
+                (Channel.username == username) |
+                (Channel.telegram_id == channel_info.telegram_id)
+            )
+            result = await session.execute(query)
+            existing_channel = result.scalar_one_or_none()
 
-        # Check for existing channel by username or telegram_id
-        query = select(Channel).where(
-            (Channel.username == username) |
-            (Channel.telegram_id == channel_info.telegram_id)
-        )
-        result = await session.execute(query)
-        existing_channel = result.scalar_one_or_none()
+            if existing_channel:
+                await update.message.reply_text(
+                    f"Channel @{existing_channel.username} is already being monitored.\n\n"
+                    f"Use /channelinfo @{existing_channel.username} to see details."
+                )
+                logger.info(
+                    "Channel already exists",
+                    username=username,
+                    existing_username=existing_channel.username
+                )
+                return
 
-        if existing_channel:
+            # Create new channel record
+            new_channel = Channel(
+                telegram_id=channel_info.telegram_id,
+                username=channel_info.username,
+                title=channel_info.title,
+                description=channel_info.description,
+                subscriber_count=channel_info.subscriber_count,
+                photo_url=channel_info.photo_url,
+                invite_link=channel_info.invite_link,
+                is_active=True,
+            )
+
+            session.add(new_channel)
+            await session.commit()
+
+            subscriber_display = format_subscriber_count(channel_info.subscriber_count)
+
             await update.message.reply_text(
-                f"Channel @{existing_channel.username} is already being monitored.\n\n"
-                f"Use /channelinfo @{existing_channel.username} to see details."
+                f"Channel successfully added!\n\n"
+                f"Title: {channel_info.title}\n"
+                f"Username: @{channel_info.username}\n"
+                f"Subscribers: {subscriber_display}\n\n"
+                f"The channel is now being monitored for content."
             )
+
             logger.info(
-                "Channel already exists",
-                username=username,
-                existing_username=existing_channel.username
+                "Channel added successfully",
+                username=channel_info.username,
+                telegram_id=channel_info.telegram_id
             )
-            return
-
-        # Create new channel record
-        new_channel = Channel(
-            telegram_id=channel_info.telegram_id,
-            username=channel_info.username,
-            title=channel_info.title,
-            description=channel_info.description,
-            subscriber_count=channel_info.subscriber_count,
-            photo_url=channel_info.photo_url,
-            invite_link=channel_info.invite_link,
-            is_active=True,
-        )
-
-        session.add(new_channel)
-        await session.commit()
-
-        subscriber_display = format_subscriber_count(channel_info.subscriber_count)
-
-        await update.message.reply_text(
-            f"Channel successfully added!\n\n"
-            f"Title: {channel_info.title}\n"
-            f"Username: @{channel_info.username}\n"
-            f"Subscribers: {subscriber_display}\n\n"
-            f"The channel is now being monitored for content."
-        )
-
-        logger.info(
-            "Channel added successfully",
-            username=channel_info.username,
-            telegram_id=channel_info.telegram_id
-        )
 
     except Exception as error:
         await update.message.reply_text(
@@ -299,39 +298,38 @@ async def removechannel_command(
         from sqlalchemy import select
         from src.tnse.db.models import Channel
 
-        session = db_session_factory()
+        async with db_session_factory() as session:
+            # Find the channel
+            query = select(Channel).where(Channel.username == username)
+            result = await session.execute(query)
+            existing_channel = result.scalar_one_or_none()
 
-        # Find the channel
-        query = select(Channel).where(Channel.username == username)
-        result = await session.execute(query)
-        existing_channel = result.scalar_one_or_none()
+            if not existing_channel:
+                await update.message.reply_text(
+                    f"Channel @{username} is not being monitored.\n\n"
+                    f"Use /channels to see all monitored channels."
+                )
+                logger.info("Channel not found for removal", username=username)
+                return
 
-        if not existing_channel:
+            channel_title = existing_channel.title
+
+            # Delete the channel
+            await session.delete(existing_channel)
+            await session.commit()
+
             await update.message.reply_text(
-                f"Channel @{username} is not being monitored.\n\n"
-                f"Use /channels to see all monitored channels."
+                f"Channel removed successfully!\n\n"
+                f"Title: {channel_title}\n"
+                f"Username: @{username}\n\n"
+                f"Content from this channel will no longer be collected."
             )
-            logger.info("Channel not found for removal", username=username)
-            return
 
-        channel_title = existing_channel.title
-
-        # Delete the channel
-        await session.delete(existing_channel)
-        await session.commit()
-
-        await update.message.reply_text(
-            f"Channel removed successfully!\n\n"
-            f"Title: {channel_title}\n"
-            f"Username: @{username}\n\n"
-            f"Content from this channel will no longer be collected."
-        )
-
-        logger.info(
-            "Channel removed successfully",
-            username=username,
-            title=channel_title
-        )
+            logger.info(
+                "Channel removed successfully",
+                username=username,
+                title=channel_title
+            )
 
     except Exception as error:
         await update.message.reply_text(
@@ -379,47 +377,46 @@ async def channels_command(
         from sqlalchemy import select
         from src.tnse.db.models import Channel
 
-        session = db_session_factory()
+        async with db_session_factory() as session:
+            # Get all active channels
+            query = select(Channel).where(Channel.is_active == True).order_by(Channel.title)
+            result = await session.execute(query)
+            channels = result.scalars().all()
 
-        # Get all active channels
-        query = select(Channel).where(Channel.is_active == True).order_by(Channel.title)
-        result = await session.execute(query)
-        channels = result.scalars().all()
+            if not channels:
+                await update.message.reply_text(
+                    "No channels are currently being monitored.\n\n"
+                    "Use /addchannel @username to add a channel."
+                )
+                logger.info("No channels found")
+                return
 
-        if not channels:
-            await update.message.reply_text(
-                "No channels are currently being monitored.\n\n"
-                "Use /addchannel @username to add a channel."
-            )
-            logger.info("No channels found")
-            return
+            # Build channel list message
+            channel_count = len(channels)
+            message_lines = [
+                f"Monitored Channels ({channel_count}):\n"
+            ]
 
-        # Build channel list message
-        channel_count = len(channels)
-        message_lines = [
-            f"Monitored Channels ({channel_count}):\n"
-        ]
+            for index, channel in enumerate(channels, start=1):
+                subscriber_display = format_subscriber_count(channel.subscriber_count)
+                status_indicator = "[Active]" if channel.is_active else "[Inactive]"
 
-        for index, channel in enumerate(channels, start=1):
-            subscriber_display = format_subscriber_count(channel.subscriber_count)
-            status_indicator = "[Active]" if channel.is_active else "[Inactive]"
+                message_lines.append(
+                    f"{index}. {channel.title}\n"
+                    f"   @{channel.username} | {subscriber_display} subscribers\n"
+                    f"   {status_indicator}"
+                )
 
             message_lines.append(
-                f"{index}. {channel.title}\n"
-                f"   @{channel.username} | {subscriber_display} subscribers\n"
-                f"   {status_indicator}"
+                f"\nUse /channelinfo @username for detailed information."
             )
 
-        message_lines.append(
-            f"\nUse /channelinfo @username for detailed information."
-        )
+            await update.message.reply_text("\n".join(message_lines))
 
-        await update.message.reply_text("\n".join(message_lines))
-
-        logger.info(
-            "Listed channels",
-            count=channel_count
-        )
+            logger.info(
+                "Listed channels",
+                count=channel_count
+            )
 
     except Exception as error:
         await update.message.reply_text(
@@ -484,71 +481,70 @@ async def channelinfo_command(
         from sqlalchemy.orm import selectinload
         from src.tnse.db.models import Channel
 
-        session = db_session_factory()
-
-        # Find the channel with health logs
-        query = (
-            select(Channel)
-            .options(selectinload(Channel.health_logs))
-            .where(Channel.username == username)
-        )
-        result = await session.execute(query)
-        channel = result.scalar_one_or_none()
-
-        if not channel:
-            await update.message.reply_text(
-                f"Channel @{username} is not being monitored.\n\n"
-                f"Use /addchannel @{username} to start monitoring."
+        async with db_session_factory() as session:
+            # Find the channel with health logs
+            query = (
+                select(Channel)
+                .options(selectinload(Channel.health_logs))
+                .where(Channel.username == username)
             )
-            logger.info("Channel not found for info", username=username)
-            return
+            result = await session.execute(query)
+            channel = result.scalar_one_or_none()
 
-        # Format channel information
-        subscriber_display = format_subscriber_count(channel.subscriber_count)
-        status_text = "Active" if channel.is_active else "Inactive"
+            if not channel:
+                await update.message.reply_text(
+                    f"Channel @{username} is not being monitored.\n\n"
+                    f"Use /addchannel @{username} to start monitoring."
+                )
+                logger.info("Channel not found for info", username=username)
+                return
 
-        # Get latest health status
-        health_status = "Unknown"
-        last_check = "Never"
-        if channel.health_logs:
-            # Sort by checked_at descending and get the first
-            sorted_logs = sorted(
-                channel.health_logs,
-                key=lambda log: log.checked_at,
-                reverse=True
+            # Format channel information
+            subscriber_display = format_subscriber_count(channel.subscriber_count)
+            status_text = "Active" if channel.is_active else "Inactive"
+
+            # Get latest health status
+            health_status = "Unknown"
+            last_check = "Never"
+            if channel.health_logs:
+                # Sort by checked_at descending and get the first
+                sorted_logs = sorted(
+                    channel.health_logs,
+                    key=lambda log: log.checked_at,
+                    reverse=True
+                )
+                latest_log = sorted_logs[0]
+                health_status = latest_log.status.replace("_", " ").title()
+                last_check = latest_log.checked_at.strftime("%Y-%m-%d %H:%M UTC")
+
+            # Build message
+            message_lines = [
+                f"Channel Information\n",
+                f"Title: {channel.title}",
+                f"Username: @{channel.username}",
+                f"Subscribers: {subscriber_display}",
+                f"Status: {status_text}",
+                f"",
+                f"Health Status: {health_status}",
+                f"Last Check: {last_check}",
+                f"",
+                f"Added: {channel.created_at.strftime('%Y-%m-%d')}",
+            ]
+
+            if channel.description:
+                # Truncate description if too long
+                description = channel.description
+                if len(description) > 200:
+                    description = description[:197] + "..."
+                message_lines.insert(4, f"Description: {description}")
+
+            await update.message.reply_text("\n".join(message_lines))
+
+            logger.info(
+                "Showed channel info",
+                username=username,
+                health_status=health_status
             )
-            latest_log = sorted_logs[0]
-            health_status = latest_log.status.replace("_", " ").title()
-            last_check = latest_log.checked_at.strftime("%Y-%m-%d %H:%M UTC")
-
-        # Build message
-        message_lines = [
-            f"Channel Information\n",
-            f"Title: {channel.title}",
-            f"Username: @{channel.username}",
-            f"Subscribers: {subscriber_display}",
-            f"Status: {status_text}",
-            f"",
-            f"Health Status: {health_status}",
-            f"Last Check: {last_check}",
-            f"",
-            f"Added: {channel.created_at.strftime('%Y-%m-%d')}",
-        ]
-
-        if channel.description:
-            # Truncate description if too long
-            description = channel.description
-            if len(description) > 200:
-                description = description[:197] + "..."
-            message_lines.insert(4, f"Description: {description}")
-
-        await update.message.reply_text("\n".join(message_lines))
-
-        logger.info(
-            "Showed channel info",
-            username=username,
-            health_status=health_status
-        )
 
     except Exception as error:
         await update.message.reply_text(

@@ -16,6 +16,24 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 
+def create_async_session_factory(mock_session):
+    """Create a mock session factory that returns an async context manager.
+
+    This helper creates a session factory mock that works with 'async with'
+    statements, which is required after the connection leak fix in WS-8.4.
+
+    Args:
+        mock_session: The mock session to return from the context manager.
+
+    Returns:
+        A MagicMock that returns an async context manager.
+    """
+    async_context = MagicMock()
+    async_context.__aenter__ = AsyncMock(return_value=mock_session)
+    async_context.__aexit__ = AsyncMock(return_value=None)
+    return MagicMock(return_value=async_context)
+
+
 class TestAddChannelCommand:
     """Tests for the /addchannel command handler."""
 
@@ -111,7 +129,7 @@ class TestAddChannelCommand:
         mock_validation_result.is_valid = True
         mock_validation_result.channel_info = mock_channel_info
 
-        # Mock database session
+        # Mock database session with async context manager support
         mock_session = MagicMock()
         mock_session.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=None)))
         mock_session.add = MagicMock()
@@ -122,7 +140,7 @@ class TestAddChannelCommand:
         context.bot_data = {
             "config": MagicMock(allowed_users=[]),
             "channel_service": MagicMock(),
-            "db_session_factory": MagicMock(return_value=mock_session),
+            "db_session_factory": create_async_session_factory(mock_session),
         }
         context.bot.send_chat_action = AsyncMock()
         context.bot_data["channel_service"].validate_channel = AsyncMock(
@@ -157,7 +175,7 @@ class TestAddChannelCommand:
         mock_validation_result.is_valid = True
         mock_validation_result.channel_info = mock_channel_info
 
-        # Mock database session - channel already exists
+        # Mock database session - channel already exists (with async context manager support)
         existing_channel = MagicMock()
         existing_channel.username = "test_channel"
         mock_session = MagicMock()
@@ -168,7 +186,7 @@ class TestAddChannelCommand:
         context.bot_data = {
             "config": MagicMock(allowed_users=[]),
             "channel_service": MagicMock(),
-            "db_session_factory": MagicMock(return_value=mock_session),
+            "db_session_factory": create_async_session_factory(mock_session),
         }
         context.bot.send_chat_action = AsyncMock()
         context.bot_data["channel_service"].validate_channel = AsyncMock(
@@ -226,21 +244,21 @@ class TestRemoveChannelCommand:
         update.effective_user.id = 123456
         update.message.reply_text = AsyncMock()
 
-        # Mock existing channel in database
+        # Mock existing channel in database (with async context manager support)
         existing_channel = MagicMock()
         existing_channel.username = "test_channel"
         existing_channel.title = "Test Channel"
 
         mock_session = MagicMock()
         mock_session.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=existing_channel)))
-        mock_session.delete = MagicMock()
+        mock_session.delete = AsyncMock()
         mock_session.commit = AsyncMock()
 
         context = MagicMock()
         context.args = ["@test_channel"]
         context.bot_data = {
             "config": MagicMock(allowed_users=[]),
-            "db_session_factory": MagicMock(return_value=mock_session),
+            "db_session_factory": create_async_session_factory(mock_session),
         }
 
         await removechannel_command(update, context)
@@ -261,7 +279,7 @@ class TestRemoveChannelCommand:
         update.effective_user.id = 123456
         update.message.reply_text = AsyncMock()
 
-        # Mock database session - channel does not exist
+        # Mock database session - channel does not exist (with async context manager support)
         mock_session = MagicMock()
         mock_session.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=None)))
 
@@ -269,7 +287,7 @@ class TestRemoveChannelCommand:
         context.args = ["@nonexistent_channel"]
         context.bot_data = {
             "config": MagicMock(allowed_users=[]),
-            "db_session_factory": MagicMock(return_value=mock_session),
+            "db_session_factory": create_async_session_factory(mock_session),
         }
 
         await removechannel_command(update, context)
@@ -323,7 +341,7 @@ class TestChannelsCommand:
         context = MagicMock()
         context.bot_data = {
             "config": MagicMock(allowed_users=[]),
-            "db_session_factory": MagicMock(return_value=mock_session),
+            "db_session_factory": create_async_session_factory(mock_session),
         }
 
         await channels_command(update, context)
@@ -345,7 +363,7 @@ class TestChannelsCommand:
         update.effective_user.id = 123456
         update.message.reply_text = AsyncMock()
 
-        # Mock empty channel list
+        # Mock empty channel list (with async context manager support)
         mock_result = MagicMock()
         mock_result.scalars = MagicMock(return_value=MagicMock(all=MagicMock(return_value=[])))
 
@@ -355,7 +373,7 @@ class TestChannelsCommand:
         context = MagicMock()
         context.bot_data = {
             "config": MagicMock(allowed_users=[]),
-            "db_session_factory": MagicMock(return_value=mock_session),
+            "db_session_factory": create_async_session_factory(mock_session),
         }
 
         await channels_command(update, context)
@@ -376,7 +394,7 @@ class TestChannelsCommand:
         update.effective_user.id = 123456
         update.message.reply_text = AsyncMock()
 
-        # Mock 3 channels
+        # Mock 3 channels (with async context manager support)
         channels = []
         for index in range(3):
             channel = MagicMock()
@@ -395,7 +413,7 @@ class TestChannelsCommand:
         context = MagicMock()
         context.bot_data = {
             "config": MagicMock(allowed_users=[]),
-            "db_session_factory": MagicMock(return_value=mock_session),
+            "db_session_factory": create_async_session_factory(mock_session),
         }
 
         await channels_command(update, context)
@@ -467,7 +485,7 @@ class TestChannelInfoCommand:
         context.args = ["@test_channel"]
         context.bot_data = {
             "config": MagicMock(allowed_users=[]),
-            "db_session_factory": MagicMock(return_value=mock_session),
+            "db_session_factory": create_async_session_factory(mock_session),
         }
 
         await channelinfo_command(update, context)
@@ -490,7 +508,7 @@ class TestChannelInfoCommand:
         update.effective_user.id = 123456
         update.message.reply_text = AsyncMock()
 
-        # Mock channel with health logs
+        # Mock channel with health logs (with async context manager support)
         health_log = MagicMock()
         health_log.status = "healthy"
         health_log.checked_at = datetime(2025, 12, 25, 12, 0, 0, tzinfo=timezone.utc)
@@ -500,6 +518,8 @@ class TestChannelInfoCommand:
         existing_channel.title = "Test Channel"
         existing_channel.subscriber_count = 50000
         existing_channel.is_active = True
+        existing_channel.created_at = datetime(2025, 1, 1, tzinfo=timezone.utc)
+        existing_channel.description = None
         existing_channel.health_logs = [health_log]
 
         mock_session = MagicMock()
@@ -509,7 +529,7 @@ class TestChannelInfoCommand:
         context.args = ["@test_channel"]
         context.bot_data = {
             "config": MagicMock(allowed_users=[]),
-            "db_session_factory": MagicMock(return_value=mock_session),
+            "db_session_factory": create_async_session_factory(mock_session),
         }
 
         await channelinfo_command(update, context)
@@ -530,7 +550,7 @@ class TestChannelInfoCommand:
         update.effective_user.id = 123456
         update.message.reply_text = AsyncMock()
 
-        # Mock database session - channel does not exist
+        # Mock database session - channel does not exist (with async context manager support)
         mock_session = MagicMock()
         mock_session.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=None)))
 
@@ -538,7 +558,7 @@ class TestChannelInfoCommand:
         context.args = ["@nonexistent_channel"]
         context.bot_data = {
             "config": MagicMock(allowed_users=[]),
-            "db_session_factory": MagicMock(return_value=mock_session),
+            "db_session_factory": create_async_session_factory(mock_session),
         }
 
         await channelinfo_command(update, context)

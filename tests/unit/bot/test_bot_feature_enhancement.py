@@ -18,6 +18,24 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 
+def create_async_session_factory(mock_session):
+    """Create a mock session factory that returns an async context manager.
+
+    This helper creates a session factory mock that works with 'async with'
+    statements, which is required after the connection leak fix in WS-8.4.
+
+    Args:
+        mock_session: The mock session to return from the context manager.
+
+    Returns:
+        A MagicMock that returns an async context manager.
+    """
+    async_context = MagicMock()
+    async_context.__aenter__ = AsyncMock(return_value=mock_session)
+    async_context.__aexit__ = AsyncMock(return_value=None)
+    return MagicMock(return_value=async_context)
+
+
 # =============================================================================
 # Test: Command Aliases
 # =============================================================================
@@ -415,15 +433,15 @@ class TestImprovedErrorMessages:
         update.effective_user.id = 123456
         update.message.reply_text = AsyncMock()
 
-        # Mock database session that returns no channel
-        mock_session = AsyncMock()
+        # Mock database session that returns no channel (with async context manager support)
+        mock_session = MagicMock()
         mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = None
+        mock_result.scalar_one_or_none = MagicMock(return_value=None)
         mock_session.execute = AsyncMock(return_value=mock_result)
 
         context = MagicMock()
         context.args = ["@nonexistent"]
-        context.bot_data = {"db_session_factory": lambda: mock_session}
+        context.bot_data = {"db_session_factory": create_async_session_factory(mock_session)}
 
         await channelinfo_command(update, context)
 
@@ -555,21 +573,21 @@ class TestDeleteConfirmation:
         update.effective_user.id = 123456
         update.message.reply_text = AsyncMock()
 
-        # Mock database session that finds the channel
+        # Mock database session that finds the channel (with async context manager support)
         mock_channel = MagicMock()
         mock_channel.title = "Test Channel"
         mock_channel.username = "testchannel"
 
-        mock_session = AsyncMock()
+        mock_session = MagicMock()
         mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = mock_channel
+        mock_result.scalar_one_or_none = MagicMock(return_value=mock_channel)
         mock_session.execute = AsyncMock(return_value=mock_result)
         mock_session.delete = AsyncMock()
         mock_session.commit = AsyncMock()
 
         context = MagicMock()
         context.args = ["@testchannel"]
-        context.bot_data = {"db_session_factory": lambda: mock_session}
+        context.bot_data = {"db_session_factory": create_async_session_factory(mock_session)}
 
         await removechannel_command(update, context)
 
