@@ -873,22 +873,38 @@ NOT directly in the text, enabling RAG-like retrieval.
 | **Dependencies** | WS-5.1, WS-5.2 |
 | **Parallel With** | None |
 | **Effort** | M |
-| **Status** | Not Started |
+| **Status** | Complete |
+| **Started** | 2026-01-05 |
+| **Completed** | 2026-01-05 |
+| **Assigned** | tdd-coder-ws53 |
 
 **Tasks:**
-- [ ] Create `src/tnse/llm/enrichment_service.py` with `EnrichmentResult` dataclass
-- [ ] Implement `enrich_post()` and `enrich_batch()` methods
-- [ ] Design prompt template for explicit/implicit keywords, category, sentiment, entities
-- [ ] Implement JSON parsing with validation
-- [ ] Handle edge cases (empty text, media-only, LLM refusal, rate limiting)
-- [ ] Add structured logging and unit tests
+- [x] Create `src/tnse/llm/enrichment_service.py` with `EnrichmentResult` dataclass
+- [x] Implement `enrich_post()` and `enrich_batch()` methods
+- [x] Design prompt template for explicit/implicit keywords, category, sentiment, entities
+- [x] Implement JSON parsing with validation
+- [x] Handle edge cases (empty text, media-only, LLM refusal, rate limiting)
+- [x] Add structured logging and unit tests
+
+**Affected Files:**
+- `src/tnse/llm/enrichment_service.py` - New service file (507 lines)
+- `src/tnse/llm/__init__.py` - Updated exports
+- `tests/unit/llm/test_enrichment_service.py` - 37 unit tests
+
+**Key Implementation Details:**
+- EnrichmentResult dataclass with all required fields
+- EnrichmentSettings for configurable batch size, rate limits, max text length
+- ENRICHMENT_PROMPT template that instructs LLM on extraction
+- Rate limiting between batch requests
+- JSON validation with defaults for missing fields
+- Keyword normalization (lowercase, deduplication)
 
 **Acceptance Criteria:**
-- [ ] Service extracts all required fields from post content
-- [ ] JSON responses properly validated
-- [ ] Batch processing respects rate limits
-- [ ] Error handling is comprehensive
-- [ ] Unit tests cover happy path and error cases
+- [x] Service extracts all required fields from post content
+- [x] JSON responses properly validated
+- [x] Batch processing respects rate limits
+- [x] Error handling is comprehensive
+- [x] Unit tests cover happy path and error cases (37 tests, 94% coverage)
 
 ---
 
@@ -904,20 +920,23 @@ NOT directly in the text, enabling RAG-like retrieval.
 | **Effort** | M |
 | **Status** | Not Started |
 
+**Infrastructure Note:** Celery Beat is already configured and operational:
+- Config: `src/tnse/core/celery_app.py`
+- Schedule file: `/tmp/celerybeat-schedule` (Docker-compatible)
+- Pattern: Follow existing `collect-content-every-15-minutes` task structure
+
 **Tasks:**
-- [ ] Create `src/tnse/llm/tasks.py` with `enrich_post()`, `enrich_new_posts()`, `enrich_channel_posts()`
-- [ ] Add rate limiting (10 requests/minute default)
-- [ ] Implement retry logic with exponential backoff
-- [ ] Add metrics logging (posts processed, tokens used, time taken)
-- [ ] Add Celery beat schedule for `enrich_new_posts` (every 5 min)
-- [ ] Store enrichment results in database
+- [ ] Create `src/tnse/llm/tasks.py` with enrichment tasks
+- [ ] Register tasks in `celery_app.py` imports/include
+- [ ] Add `enrich_new_posts` to Celery Beat schedule (every 5 min)
+- [ ] Wire to ContentCollector pipeline (async queue recommended)
+- [ ] Add rate limiting (10 req/min) and retry logic
 - [ ] Create unit and integration tests
 
 **Acceptance Criteria:**
 - [ ] Tasks can be triggered manually via Celery
-- [ ] Scheduled task processes new posts automatically
+- [ ] Scheduled task processes new posts automatically every 5 minutes
 - [ ] Rate limiting prevents API abuse
-- [ ] Failed tasks retry appropriately
 - [ ] Results stored in database correctly
 
 ---
@@ -2018,8 +2037,8 @@ Currently re-fetches same messages each collection cycle because there's no trac
 | WS-4.2 | Production Environment Configuration | WS-4.1 | S | Complete |
 | WS-4.3 | Deployment Documentation | WS-4.1, WS-4.2 | S | Complete |
 | WS-5.1 | Groq Client Integration | WS-2.4 | S | Complete |
-| WS-5.2 | Database Schema (Post Enrichment) | WS-5.1 | S | Not Started |
-| WS-5.3 | Enrichment Service Core | WS-5.1, WS-5.2 | M | Not Started |
+| WS-5.2 | Database Schema (Post Enrichment) | WS-5.1 | S | Complete |
+| WS-5.3 | Enrichment Service Core | WS-5.1, WS-5.2 | M | Complete |
 | WS-5.4 | Celery Enrichment Tasks | WS-5.3, WS-8.1 | M | Not Started |
 | WS-5.5 | Enhanced Search Service | WS-5.2, WS-5.4 | M | Not Started |
 | WS-5.6 | Bot Integration (LLM) | WS-5.5 | M | Not Started |
