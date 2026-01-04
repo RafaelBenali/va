@@ -34,6 +34,10 @@ from src.tnse.bot.search_handlers import (
     search_command,
     SEARCH_CALLBACK_PREFIX,
 )
+from src.tnse.bot.sync_handlers import (
+    sync_command,
+    SyncRateLimiter,
+)
 from src.tnse.bot.topic_handlers import (
     savetopic_command,
     topics_command,
@@ -42,11 +46,26 @@ from src.tnse.bot.topic_handlers import (
     templates_command,
     use_template_command,
 )
+from src.tnse.bot.menu import setup_bot_menu
 from src.tnse.core.logging import configure_logging, get_logger
 
 # Configure logging for the bot
 configure_logging()
 logger = get_logger(__name__)
+
+
+async def _post_init(application: Application) -> None:
+    """
+    Post-initialization callback for the bot application.
+
+    Called after the application is initialized but before it starts
+    processing updates. Sets up the bot menu and commands.
+
+    Args:
+        application: The initialized Application instance.
+    """
+    logger.info("Running post-init callback")
+    await setup_bot_menu(application.bot)
 
 
 def create_bot_application(
@@ -83,8 +102,8 @@ def create_bot_application(
         allowed_users_count=len(config.allowed_users),
     )
 
-    # Build the application
-    builder = Application.builder().token(config.token)
+    # Build the application with post_init callback for menu setup
+    builder = Application.builder().token(config.token).post_init(_post_init)
     application = builder.build()
 
     # Store config and services in bot_data for handlers to access
@@ -97,6 +116,9 @@ def create_bot_application(
         application.bot_data["search_service"] = search_service
     if topic_service is not None:
         application.bot_data["topic_service"] = topic_service
+
+    # Create and store sync rate limiter (5 minute cooldown)
+    application.bot_data["sync_rate_limiter"] = SyncRateLimiter(cooldown_seconds=300)
 
     # Register command handlers with access control
     # Wrap handlers with require_access for protected commands
@@ -129,6 +151,9 @@ def create_bot_application(
     application.add_handler(CommandHandler("deletetopic", require_access(deletetopic_command)))
     application.add_handler(CommandHandler("templates", require_access(templates_command)))
     application.add_handler(CommandHandler("usetemplate", require_access(use_template_command)))
+
+    # Sync command (WS-9.2) - triggers manual content collection
+    application.add_handler(CommandHandler("sync", require_access(sync_command)))
 
     # Callback query handlers for pagination
     application.add_handler(
