@@ -322,13 +322,21 @@ class TestEnvironmentVariableHandling:
         content = config_file.read_text(encoding="utf-8")
 
         # Bot token should not have a default real value
-        assert "bot_token: Optional[str] = Field(default=None" in content, (
+        # Support both Optional[str] and str | None (PEP 604) syntax
+        assert (
+            "bot_token: Optional[str] = Field(default=None" in content or
+            "bot_token: str | None = Field(default=None" in content
+        ), (
             "Telegram bot token should default to None, not a value"
         )
 
         # API keys should not have default values
-        assert "api_key: Optional[str] = Field(default=None" in content or \
-               "OPENAI_API_KEY" in content, (
+        # Support both Optional[str] and str | None (PEP 604) syntax
+        assert (
+            "api_key: Optional[str] = Field(default=None" in content or
+            "api_key: str | None = Field(default=None" in content or
+            "OPENAI_API_KEY" in content
+        ), (
             "API keys should default to None"
         )
 

@@ -182,7 +182,7 @@ async def addchannel_command(
     # Check if channel already exists in database
     try:
         from sqlalchemy import select
-        from src.tnse.db.models import Channel
+        from src.tnse.db.models import Channel, ChannelHealthLog, ChannelStatus
 
         async with db_session_factory() as session:
             # Check for existing channel by username or telegram_id
@@ -218,6 +218,16 @@ async def addchannel_command(
             )
 
             session.add(new_channel)
+            await session.flush()  # Get the channel ID
+
+            # Create initial health log entry to indicate successful validation
+            initial_health_log = ChannelHealthLog(
+                channel_id=new_channel.id,
+                status=ChannelStatus.HEALTHY.value,
+                error_message=None,
+            )
+            session.add(initial_health_log)
+
             await session.commit()
 
             subscriber_display = format_subscriber_count(channel_info.subscriber_count)

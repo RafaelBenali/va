@@ -204,8 +204,16 @@ class SearchService:
         cutoff_time = datetime.now(timezone.utc) - timedelta(hours=query.hours)
 
         # Build the search query with parameterized values
-        search_terms = " & ".join(query.keywords)
+        # Join keywords with space for plainto_tsquery (plain text input)
+        search_terms = " ".join(query.keywords)
 
+        # Use plainto_tsquery instead of to_tsquery for plain text search.
+        # plainto_tsquery handles plain text input and converts it to a
+        # tsquery automatically, while to_tsquery requires pre-formatted
+        # tsquery syntax with lexemes.
+        #
+        # Also use websearch_to_tsquery for 'simple' config as it provides
+        # more flexible search with implicit AND between terms.
         sql = text("""
             SELECT
                 p.id AS post_id,
@@ -231,11 +239,11 @@ class SearchService:
             WHERE p.published_at >= :cutoff_time
             AND (
                 to_tsvector('russian', COALESCE(pc.text_content, '')) @@
-                    to_tsquery('russian', :search_terms)
+                    plainto_tsquery('russian', :search_terms)
                 OR to_tsvector('english', COALESCE(pc.text_content, '')) @@
-                    to_tsquery('english', :search_terms)
+                    plainto_tsquery('english', :search_terms)
                 OR to_tsvector('simple', COALESCE(pc.text_content, '')) @@
-                    to_tsquery('simple', :search_terms)
+                    plainto_tsquery('simple', :search_terms)
             )
             ORDER BY em.relative_engagement DESC, em.view_count DESC
             LIMIT :limit OFFSET :offset

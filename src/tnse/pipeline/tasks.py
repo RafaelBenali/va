@@ -30,7 +30,16 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from src.tnse.core.config import get_settings
 from src.tnse.core.logging import get_logger
-from src.tnse.db.models import Channel, Post, PostContent, PostMedia, EngagementMetrics, ReactionCount
+from src.tnse.db.models import (
+    Channel,
+    ChannelHealthLog,
+    ChannelStatus,
+    Post,
+    PostContent,
+    PostMedia,
+    EngagementMetrics,
+    ReactionCount,
+)
 from src.tnse.pipeline.collector import ContentCollector
 from src.tnse.pipeline.storage import ContentStorage
 from src.tnse.telegram.client import TelegramClientConfig, TelethonClient
@@ -154,6 +163,8 @@ async def _collect_channel_content_async(
         )
 
         # Collect messages from Telegram
+        collection_health_status = ChannelStatus.HEALTHY
+        collection_error_message = None
         try:
             collection_result = await collector.collect_channel_messages(
                 telegram_channel_id=channel.telegram_id,
@@ -167,6 +178,25 @@ async def _collect_channel_content_async(
                 channel_id=channel_id,
                 error=str(error)
             )
+            # Determine health status based on error type
+            error_str = str(error).lower()
+            if "rate" in error_str or "flood" in error_str:
+                collection_health_status = ChannelStatus.RATE_LIMITED
+            elif "not found" in error_str or "invalid" in error_str:
+                collection_health_status = ChannelStatus.INACCESSIBLE
+            else:
+                collection_health_status = ChannelStatus.INACCESSIBLE
+            collection_error_message = str(error)
+
+            # Log health status for failed collection
+            health_log = ChannelHealthLog(
+                channel_id=channel_uuid,
+                status=collection_health_status.value,
+                error_message=collection_error_message,
+            )
+            session.add(health_log)
+            await session.commit()
+
             return {
                 "status": "error",
                 "channel_id": channel_id,
@@ -238,7 +268,17 @@ async def _collect_channel_content_async(
                 )
                 errors.append(f"Storage error for message {message_data.get('telegram_message_id')}: {error}")
 
-        # Commit all changes
+        # Log health status for successful/partial collection
+        health_status = ChannelStatus.HEALTHY if not errors else ChannelStatus.HEALTHY
+        health_error_message = None if not errors else f"{len(errors)} storage errors"
+        health_log = ChannelHealthLog(
+            channel_id=channel_uuid,
+            status=health_status.value,
+            error_message=health_error_message,
+        )
+        session.add(health_log)
+
+        # Commit all changes including health log
         await session.commit()
 
     status = "completed" if not errors else "partial"

@@ -138,8 +138,13 @@ def mock_db_session() -> MagicMock:
     session = MagicMock()
     session.execute = AsyncMock()
     session.commit = AsyncMock()
+    session.flush = AsyncMock()  # Added for health log creation
     session.add = MagicMock()
     session.delete = AsyncMock()
+
+    # Support async context manager
+    session.__aenter__ = AsyncMock(return_value=session)
+    session.__aexit__ = AsyncMock(return_value=None)
 
     # Mock query result for empty channel list
     result = MagicMock()
