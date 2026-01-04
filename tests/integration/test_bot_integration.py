@@ -1035,3 +1035,316 @@ class TestHelperCommandsIntegration:
 
         # Should show user ID
         assert "User ID" in settings_text
+
+
+class TestSyncWorkflowIntegration:
+    """Integration tests for manual sync command workflow (WS-9.2)."""
+
+    @pytest.mark.asyncio
+    async def test_sync_all_channels_workflow(
+        self,
+        bot_config: BotConfig,
+        mock_db_session: MagicMock,
+    ) -> None:
+        """Test complete workflow: sync all monitored channels."""
+        from src.tnse.bot.sync_handlers import sync_command, SyncRateLimiter
+        from src.tnse.db.models import Channel
+
+        # Create mock channels
+        channel1 = MagicMock()
+        channel1.id = uuid4()
+        channel1.username = "channel_1"
+        channel1.title = "Channel One"
+        channel1.is_active = True
+
+        channel2 = MagicMock()
+        channel2.id = uuid4()
+        channel2.username = "channel_2"
+        channel2.title = "Channel Two"
+        channel2.is_active = True
+
+        # Mock session to return channels
+        mock_session = MagicMock()
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [channel1, channel2]
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+
+        mock_session_factory = MagicMock(return_value=mock_session)
+
+        message = create_test_message("/sync")
+        update = create_test_update(message)
+        context = create_test_context({
+            "config": bot_config,
+            "db_session_factory": mock_session_factory,
+            "sync_rate_limiter": SyncRateLimiter(cooldown_seconds=300),
+        })
+        context.args = []
+
+        # Mock the Celery task
+        with patch("src.tnse.bot.sync_handlers.collect_all_channels") as mock_task:
+            mock_task.delay.return_value = MagicMock(id="task-all-channels")
+            await sync_command(update, context)
+
+        # Verify task was triggered
+        mock_task.delay.assert_called_once()
+
+        # Verify success message mentions channel count
+        update.message.reply_text.assert_called()
+        call_args = update.message.reply_text.call_args[0][0]
+        assert "2 channels" in call_args or "sync started" in call_args.lower()
+
+    @pytest.mark.asyncio
+    async def test_sync_specific_channel_workflow(
+        self,
+        bot_config: BotConfig,
+    ) -> None:
+        """Test complete workflow: sync specific channel."""
+        from src.tnse.bot.sync_handlers import sync_command, SyncRateLimiter
+
+        # Create mock channel
+        mock_channel = MagicMock()
+        mock_channel.id = uuid4()
+        mock_channel.username = "test_channel"
+        mock_channel.title = "Test Channel"
+
+        # Mock session to return the channel
+        mock_session = MagicMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_channel
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+
+        mock_session_factory = MagicMock(return_value=mock_session)
+
+        message = create_test_message("/sync @test_channel")
+        update = create_test_update(message)
+        context = create_test_context({
+            "config": bot_config,
+            "db_session_factory": mock_session_factory,
+            "sync_rate_limiter": SyncRateLimiter(cooldown_seconds=300),
+        })
+        context.args = ["@test_channel"]
+
+        # Mock the Celery task
+        with patch("src.tnse.bot.sync_handlers.collect_channel_content") as mock_task:
+            mock_task.delay.return_value = MagicMock(id="task-specific-channel")
+            await sync_command(update, context)
+
+        # Verify task was triggered with correct channel ID
+        mock_task.delay.assert_called_once_with(str(mock_channel.id))
+
+        # Verify success message mentions channel name
+        update.message.reply_text.assert_called()
+        call_args = update.message.reply_text.call_args[0][0]
+        assert "test_channel" in call_args.lower() or "test channel" in call_args.lower()
+
+    @pytest.mark.asyncio
+    async def test_sync_rate_limiting_workflow(
+        self,
+        bot_config: BotConfig,
+    ) -> None:
+        """Test sync rate limiting prevents rapid syncs."""
+        from src.tnse.bot.sync_handlers import sync_command, SyncRateLimiter
+
+        # Create mock channels
+        mock_channel = MagicMock()
+        mock_channel.id = uuid4()
+        mock_channel.username = "test_channel"
+        mock_channel.is_active = True
+
+        # Mock session
+        mock_session = MagicMock()
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [mock_channel]
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+
+        mock_session_factory = MagicMock(return_value=mock_session)
+
+        # Create rate limiter
+        rate_limiter = SyncRateLimiter(cooldown_seconds=300)
+
+        # First sync - should succeed
+        message1 = create_test_message("/sync")
+        update1 = create_test_update(message1)
+        context1 = create_test_context({
+            "config": bot_config,
+            "db_session_factory": mock_session_factory,
+            "sync_rate_limiter": rate_limiter,
+        })
+        context1.args = []
+
+        with patch("src.tnse.bot.sync_handlers.collect_all_channels") as mock_task:
+            mock_task.delay.return_value = MagicMock(id="task-1")
+            await sync_command(update1, context1)
+
+        # First sync should succeed
+        mock_task.delay.assert_called_once()
+        call_args1 = update1.message.reply_text.call_args[0][0]
+        assert "sync started" in call_args1.lower() or "task" in call_args1.lower()
+
+        # Second sync - should be rate limited
+        message2 = create_test_message("/sync")
+        update2 = create_test_update(message2)
+        context2 = create_test_context({
+            "config": bot_config,
+            "db_session_factory": mock_session_factory,
+            "sync_rate_limiter": rate_limiter,
+        })
+        context2.args = []
+
+        with patch("src.tnse.bot.sync_handlers.collect_all_channels") as mock_task2:
+            mock_task2.delay.return_value = MagicMock(id="task-2")
+            await sync_command(update2, context2)
+
+        # Second sync should NOT trigger task (rate limited)
+        mock_task2.delay.assert_not_called()
+
+        # Should show rate limit message
+        call_args2 = update2.message.reply_text.call_args[0][0]
+        assert "rate" in call_args2.lower() or "wait" in call_args2.lower()
+
+    @pytest.mark.asyncio
+    async def test_sync_channel_not_monitored(
+        self,
+        bot_config: BotConfig,
+    ) -> None:
+        """Test sync for a channel that is not being monitored."""
+        from src.tnse.bot.sync_handlers import sync_command, SyncRateLimiter
+
+        # Mock session to return None (channel not found)
+        mock_session = MagicMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+
+        mock_session_factory = MagicMock(return_value=mock_session)
+
+        message = create_test_message("/sync @unknown_channel")
+        update = create_test_update(message)
+        context = create_test_context({
+            "config": bot_config,
+            "db_session_factory": mock_session_factory,
+            "sync_rate_limiter": SyncRateLimiter(cooldown_seconds=300),
+        })
+        context.args = ["@unknown_channel"]
+
+        await sync_command(update, context)
+
+        # Should show not monitored message
+        update.message.reply_text.assert_called()
+        call_args = update.message.reply_text.call_args[0][0]
+        assert "not monitored" in call_args.lower() or "not found" in call_args.lower()
+
+    @pytest.mark.asyncio
+    async def test_sync_with_access_control(
+        self,
+        bot_config: BotConfig,
+    ) -> None:
+        """Test that sync command respects access control."""
+        from src.tnse.bot.handlers import require_access
+        from src.tnse.bot.sync_handlers import sync_command, SyncRateLimiter
+
+        # Create unauthorized user
+        unauthorized_user = create_test_user(user_id=999999999)
+        message = create_test_message("/sync", user=unauthorized_user)
+        update = create_test_update(message)
+        update.effective_user = unauthorized_user
+
+        context = create_test_context({
+            "config": bot_config,
+            "sync_rate_limiter": SyncRateLimiter(cooldown_seconds=300),
+        })
+        context.args = []
+
+        # Apply access control wrapper
+        wrapped_sync = require_access(sync_command)
+        await wrapped_sync(update, context)
+
+        # Should receive access denied
+        update.message.reply_text.assert_called()
+        call_args = update.message.reply_text.call_args[0][0]
+        assert "access denied" in call_args.lower()
+
+    @pytest.mark.asyncio
+    async def test_sync_shows_typing_indicator(
+        self,
+        bot_config: BotConfig,
+    ) -> None:
+        """Test that sync shows typing indicator during processing."""
+        from src.tnse.bot.sync_handlers import sync_command, SyncRateLimiter
+        from telegram.constants import ChatAction
+
+        # Create mock channel
+        mock_channel = MagicMock()
+        mock_channel.id = uuid4()
+        mock_channel.username = "test_channel"
+        mock_channel.is_active = True
+
+        # Mock session
+        mock_session = MagicMock()
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [mock_channel]
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+
+        mock_session_factory = MagicMock(return_value=mock_session)
+
+        message = create_test_message("/sync")
+        update = create_test_update(message)
+        context = create_test_context({
+            "config": bot_config,
+            "db_session_factory": mock_session_factory,
+            "sync_rate_limiter": SyncRateLimiter(cooldown_seconds=300),
+        })
+        context.args = []
+
+        with patch("src.tnse.bot.sync_handlers.collect_all_channels") as mock_task:
+            mock_task.delay.return_value = MagicMock(id="task-123")
+            await sync_command(update, context)
+
+        # Verify typing indicator was sent
+        context.bot.send_chat_action.assert_called_with(
+            chat_id=update.effective_chat.id,
+            action=ChatAction.TYPING,
+        )
+
+    @pytest.mark.asyncio
+    async def test_sync_handler_registered_in_application(
+        self,
+        bot_config: BotConfig,
+    ) -> None:
+        """Test that sync command handler is registered in application."""
+        from src.tnse.bot.application import create_bot_application
+        from telegram.ext import CommandHandler
+
+        app = create_bot_application(bot_config)
+
+        # Find sync command handler
+        sync_handlers = [
+            handler for handler in app.handlers.get(0, [])
+            if isinstance(handler, CommandHandler) and "sync" in handler.commands
+        ]
+
+        assert len(sync_handlers) == 1
+
+    def test_sync_rate_limiter_in_bot_data(
+        self,
+        bot_config: BotConfig,
+    ) -> None:
+        """Test that sync rate limiter is created in bot_data."""
+        from src.tnse.bot.application import create_bot_application
+        from src.tnse.bot.sync_handlers import SyncRateLimiter
+
+        app = create_bot_application(bot_config)
+
+        assert "sync_rate_limiter" in app.bot_data
+        assert isinstance(app.bot_data["sync_rate_limiter"], SyncRateLimiter)
+        assert app.bot_data["sync_rate_limiter"].cooldown_seconds == 300
