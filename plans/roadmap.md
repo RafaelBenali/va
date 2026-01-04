@@ -11,6 +11,7 @@
 | WS-8.1 | Wire Celery Tasks to ContentCollector | Complete | HIGH |
 | WS-8.2 | Resume-from-Last-Point Tracking | Complete | MEDIUM |
 | WS-8.3 | Roadmap Sync | Complete | LOW |
+| WS-8.4 | AsyncSession Connection Leak Bug Fix | Complete | HIGH |
 | WS-9.1 | Bot Menu Button | Not Started | MEDIUM |
 | WS-9.2 | Manual Channel Sync Command | Not Started | MEDIUM |
 
@@ -207,6 +208,43 @@ was fixed as part of WS-7.3 implementation. The AsyncSession context manager iss
   - Both roadmaps show same status for all work streams
   - All new work streams (WS-7.4, WS-8.x) documented in both files
   - Service injection standard documented
+
+---
+
+## Batch 8.3 (Complete) - AsyncSession Connection Leak Bug Fix
+
+### Phase 8.3.1: Fix AsyncSession Connection Leak Bug
+- **Status:** Complete
+- **Started:** 2026-01-04
+- **Completed:** 2026-01-04
+- **Priority:** HIGH
+- **Assigned:** Claude Code
+- **Tasks:**
+  - [x] Write failing tests for session lifecycle in channel handlers
+  - [x] Fix session leak in addchannel_command (use async context manager)
+  - [x] Fix session leak in removechannel_command (use async context manager)
+  - [x] Fix session leak in channels_command (use async context manager)
+  - [x] Fix session leak in channelinfo_command (use async context manager)
+  - [x] Update existing tests to use async context manager mocks
+  - [x] Verify all 336 bot tests pass
+  - [x] Create devlog entry
+- **Effort:** S
+- **Done When:**
+  - No more "garbage collector cleaning up non-checked-in connection" warnings
+  - All database sessions properly closed via async context managers
+  - All 336 bot tests pass
+  - Devlog entry created
+
+**Root Cause:**
+Database sessions were created with `session = db_session_factory()` but never closed.
+The fix uses `async with db_session_factory() as session:` to ensure automatic cleanup.
+
+**Affected Files:**
+- `src/tnse/bot/channel_handlers.py` - Fixed 4 handlers
+- `tests/unit/bot/test_session_leak.py` - New test file (9 tests)
+- `tests/unit/bot/test_channel_commands.py` - Updated mocks
+- `tests/unit/bot/test_bot_feature_enhancement.py` - Updated mocks
+- `devlog/ws-8.4-async-session-leak-fix.md` - Devlog entry
 
 ---
 
