@@ -1633,7 +1633,9 @@ Currently re-fetches same messages each collection cycle because there's no trac
 | **Dependencies** | WS-8.3 |
 | **Parallel With** | WS-9.2 |
 | **Effort** | S |
-| **Status** | Not Started |
+| **Status** | In Progress |
+| **Started** | 2026-01-04 |
+| **Assigned** | Claude Code |
 
 **Tasks:**
 - [ ] Research Telegram Bot API setMyCommands and MenuButton options
@@ -1666,7 +1668,9 @@ Currently re-fetches same messages each collection cycle because there's no trac
 | **Dependencies** | WS-8.1 (Celery tasks wired) |
 | **Parallel With** | WS-9.1 |
 | **Effort** | M |
-| **Status** | Not Started |
+| **Status** | In Progress |
+| **Started** | 2026-01-04 |
+| **Assigned** | Claude Code |
 
 **Tasks:**
 - [ ] Add `/sync` command to trigger content collection for all channels
@@ -1768,7 +1772,7 @@ Currently re-fetches same messages each collection cycle because there's no trac
 | WS-8.1 | Wire Celery Tasks to ContentCollector | WS-7.4 | M | Complete |
 | WS-8.2 | Resume-from-Last-Point Tracking | WS-8.1 | M | Complete |
 | WS-8.3 | Roadmap Sync | None | S | Complete |
-| WS-9.1 | Bot Menu Button | WS-8.3 | S | Not Started |
+| WS-9.1 | Bot Menu Button | WS-8.3 | S | In Progress |
 | WS-9.2 | Manual Channel Sync Command | WS-8.1 | M | Not Started |
 
 ---
