@@ -7,11 +7,13 @@
 | WS-7.1 | Bot Service Dependency Injection Bug Fix | Complete | HIGH |
 | WS-7.2 | TelethonClient Auto-Connect Bug Fix | Complete | HIGH |
 | WS-7.3 | Search Service Injection Bug Fix | Complete | HIGH |
-| WS-7.4 | SearchService Async/Sync Context Manager Bug | Complete | HIGH |
-| WS-7.5 | TopicService Injection Bug Fix | Not Started | HIGH |
-| WS-8.1 | Wire Celery Tasks to ContentCollector | Not Started | HIGH |
-| WS-8.2 | Resume-from-Last-Point Tracking | Not Started | MEDIUM |
+| WS-7.4 | TopicService Injection Bug Fix | Complete | HIGH |
+| WS-8.1 | Wire Celery Tasks to ContentCollector | Complete | HIGH |
+| WS-8.2 | Resume-from-Last-Point Tracking | Complete | MEDIUM |
 | WS-8.3 | Roadmap Sync | Complete | LOW |
+
+**Note:** WS-7.4 was originally "SearchService Async/Sync Context Manager Bug" in earlier versions.
+This was fixed during WS-7.3 implementation. The numbering was adjusted to align with root roadmap.md.
 
 ---
 
@@ -89,60 +91,19 @@
 
 ---
 
-## Batch 7.4 (Complete) - SearchService Async/Sync Bug
+## Batch 7.4 (Complete) - TopicService Injection Bug
 
-### Phase 7.4.1: Fix AsyncSession Context Manager Bug
+### Phase 7.4.1: Fix TopicService Dependency Injection Bug
 - **Status:** Complete
 - **Started:** 2026-01-04
 - **Completed:** 2026-01-04
-- **Assigned:** Claude Code
 - **Tasks:**
-  - [x] Write failing test reproducing the async/sync mismatch bug
-  - [x] Fix `with self.session_factory()` to `async with self.session_factory()`
-  - [x] Fix `session.execute()` to `await session.execute()`
-  - [x] Verify all tests pass (71 search-related tests pass)
-  - [x] Update devlog with fix details
-- **Effort:** S
-- **Done When:**
-  - SearchService._execute_search() properly uses async context manager
-  - All existing tests pass
-  - No more TypeError: 'AsyncSession' object does not support context manager
-
-**Root Cause Analysis:**
-```
-File: src/tnse/search/service.py (line 244)
-
-with self.session_factory() as session:  # WRONG - sync context manager
-    result = session.execute(...)         # WRONG - missing await
-
-# Should be:
-async with self.session_factory() as session:  # CORRECT - async
-    result = await session.execute(...)         # CORRECT - await
-```
-
-The SearchService uses `session_factory` which is an `async_sessionmaker` that returns
-`AsyncSession`. Using `with` instead of `async with` causes the TypeError because
-`AsyncSession` doesn't implement `__enter__`/`__exit__`, only `__aenter__`/`__aexit__`.
-
-**Affected Files:**
-- `src/tnse/search/service.py`
-- `tests/unit/search/test_search_service.py` (updated mocks)
-- `tests/unit/search/test_search_service_async.py` (new test file)
-
----
-
-## Batch 7.5 (Pending) - TopicService Injection Bug
-
-### Phase 7.5.1: Fix TopicService Dependency Injection Bug
-- **Status:** Not Started
-- **Priority:** HIGH
-- **Tasks:**
-  - [ ] Create `create_topic_service()` factory function in `__main__.py`
-  - [ ] Add topic service to `log_service_status()` for startup visibility
-  - [ ] Inject topic service into `create_bot_from_env()` call
-  - [ ] Update topic_handlers.py error messages to indicate configuration issue
-  - [ ] Add unit tests for topic service injection scenarios
-  - [ ] Verify all topic commands work after fix
+  - [x] Create `create_topic_service()` factory function in `__main__.py`
+  - [x] Add topic service to `log_service_status()` for startup visibility
+  - [x] Inject topic service into `create_bot_from_env()` call
+  - [x] Update topic_handlers.py error messages to indicate configuration issue
+  - [x] Add unit tests for topic service injection scenarios
+  - [x] Verify all topic commands work after fix
 - **Effort:** S
 - **Done When:**
   - /savetopic command works correctly
@@ -157,23 +118,28 @@ The SearchService uses `session_factory` which is an `async_sessionmaker` that r
 - `src/tnse/bot/topic_handlers.py`
 - `src/tnse/bot/application.py`
 
+**Historical Note:** The original WS-7.4 "SearchService Async/Sync Context Manager Bug"
+was fixed as part of WS-7.3 implementation. The AsyncSession context manager issue
+(`with` vs `async with`) was resolved in `src/tnse/search/service.py`.
+
 ---
 
-## Batch 8.1 (Blocked by WS-7.5) - Content Collection Pipeline
+## Batch 8.1 (Complete) - Content Collection Pipeline
 
 ### Phase 8.1.1: Wire Celery Tasks to ContentCollector
-- **Status:** Not Started
+- **Status:** Complete
+- **Started:** 2026-01-04
+- **Completed:** 2026-01-04
 - **Priority:** HIGH
-- **Depends On:** WS-7.5
 - **Tasks:**
-  - [ ] Audit current Celery task implementations to identify stub code
-  - [ ] Create ContentCollector service factory function
-  - [ ] Wire `collect_channel_content` task to ContentCollector.collect()
-  - [ ] Wire `collect_all_channels` task to iterate channels and call ContentCollector
-  - [ ] Add proper error handling and retry logic
-  - [ ] Add metrics/logging for collection job status
-  - [ ] Add unit tests for wired Celery tasks
-  - [ ] Integration test: verify content actually stored in database after collection
+  - [x] Audit current Celery task implementations to identify stub code
+  - [x] Create ContentCollector service factory function
+  - [x] Wire `collect_channel_content` task to ContentCollector.collect()
+  - [x] Wire `collect_all_channels` task to iterate channels and call ContentCollector
+  - [x] Add proper error handling and retry logic
+  - [x] Add metrics/logging for collection job status
+  - [x] Add unit tests for wired Celery tasks
+  - [x] Integration test: verify content actually stored in database after collection
 - **Effort:** M
 - **Done When:**
   - Celery beat scheduler triggers content collection every 15-30 minutes
@@ -183,25 +149,26 @@ The SearchService uses `session_factory` which is an `async_sessionmaker` that r
   - Failed collections retry with exponential backoff
 
 **Affected Files:**
-- `src/tnse/tasks/content_tasks.py`
-- `src/tnse/services/content_collector.py`
-- `src/tnse/bot/__main__.py` (if service injection needed)
+- `src/tnse/pipeline/tasks.py`
+- `src/tnse/pipeline/collector.py`
+- `src/tnse/pipeline/storage.py`
 
 ---
 
 ### Phase 8.1.2: Resume-from-Last-Point Tracking
-- **Status:** Not Started
+- **Status:** Complete
+- **Started:** 2026-01-04
+- **Completed:** 2026-01-04
 - **Priority:** MEDIUM
-- **Depends On:** WS-8.1
-- **Parallel With:** WS-8.1
+- **Assigned:** Claude Code
 - **Tasks:**
-  - [ ] Add `last_collected_message_id` column to channels table (migration)
-  - [ ] Update ContentCollector to read last_collected_message_id before fetching
-  - [ ] Pass min_id parameter to Telegram API to fetch only new messages
-  - [ ] Update last_collected_message_id after successful collection
-  - [ ] Handle edge cases: channel reset, message deletion, gaps
-  - [ ] Add unit tests for resume tracking logic
-  - [ ] Integration test: verify only new messages collected on second run
+  - [x] Add `last_collected_message_id` column to channels table (migration)
+  - [x] Update ContentCollector to read last_collected_message_id before fetching
+  - [x] Pass min_id parameter to Telegram API to fetch only new messages
+  - [x] Update last_collected_message_id after successful collection
+  - [x] Handle edge cases: channel reset, message deletion, gaps
+  - [x] Add unit tests for resume tracking logic
+  - [x] Integration test: verify only new messages collected on second run
 - **Effort:** M
 - **Done When:**
   - First collection fetches all messages in 24-hour window
@@ -211,10 +178,11 @@ The SearchService uses `session_factory` which is an `async_sessionmaker` that r
   - Edge cases handled gracefully (no crashes on gaps/deletions)
 
 **Affected Files:**
-- `alembic/versions/` (new migration)
-- `src/tnse/models/channel.py`
-- `src/tnse/services/content_collector.py`
-- `src/tnse/telegram/client.py` (if min_id parameter needed)
+- `alembic/versions/add_last_collected_message_id.py`
+- `src/tnse/db/models.py`
+- `src/tnse/pipeline/collector.py`
+- `tests/unit/pipeline/test_resume_tracking.py`
+- `tests/integration/test_resume_tracking_integration.py`
 
 ---
 
