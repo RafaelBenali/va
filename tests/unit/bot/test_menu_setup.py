@@ -373,10 +373,8 @@ class TestApplicationMenuSetup:
         mock_bot.set_my_commands = AsyncMock(return_value=True)
         mock_bot.set_chat_menu_button = AsyncMock(return_value=True)
 
-        with patch("src.tnse.bot.menu.get_logger") as mock_get_logger:
-            mock_logger = MagicMock()
-            mock_get_logger.return_value = mock_logger
-
+        # Patch the logger object directly on the menu module
+        with patch("src.tnse.bot.menu.logger") as mock_logger:
             await setup_bot_menu(mock_bot)
 
             # Verify logging was called
