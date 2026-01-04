@@ -5,8 +5,9 @@
 | ID | Name | Status | Priority |
 |----|------|--------|----------|
 | WS-5.1 | Groq Client Integration | Complete | HIGH |
-| WS-5.2 | Database Schema (Post Enrichment) | Not Started | HIGH |
-| WS-5.3 | Enrichment Service Core | Not Started | HIGH |
+| WS-5.2 | Database Schema (Post Enrichment) | Complete | HIGH |
+| WS-5.3 | Enrichment Service Core | Complete | HIGH |
+| WS-5.4 | Celery Enrichment Tasks | Complete | HIGH |
 | WS-7.1 | Bot Service Dependency Injection Bug Fix | Complete | HIGH |
 | WS-7.2 | TelethonClient Auto-Connect Bug Fix | Complete | HIGH |
 | WS-7.3 | Search Service Injection Bug Fix | Complete | HIGH |
@@ -377,6 +378,30 @@ The fix uses `async with db_session_factory() as session:` to ensure automatic c
 - **Done When:**
   - Service extracts keywords, category, sentiment from posts
   - JSON responses properly validated
+
+---
+
+### Phase 5.4: Celery Enrichment Tasks
+- **Status:** Not Started
+- **Priority:** HIGH
+- **Depends On:** WS-5.3
+- **Infrastructure Note:** Celery Beat is already configured and operational:
+  - Config: `src/tnse/core/celery_app.py`
+  - Schedule file: `/tmp/celerybeat-schedule` (Docker-compatible)
+  - Pattern: Follow existing `collect-content-every-15-minutes` task structure
+- **Tasks:**
+  - [ ] Create `src/tnse/llm/tasks.py` with enrichment tasks
+  - [ ] Register tasks in `celery_app.py` imports/include
+  - [ ] Add `enrich_new_posts` to Celery Beat schedule (every 5 min)
+  - [ ] Wire to ContentCollector pipeline (async queue recommended)
+  - [ ] Add rate limiting (10 req/min) and retry logic
+  - [ ] Create unit and integration tests
+- **Effort:** M
+- **Done When:**
+  - Tasks can be triggered manually via Celery
+  - Scheduled task processes new posts automatically every 5 minutes
+  - Rate limiting prevents API abuse
+  - Results stored in database correctly
 
 ---
 
