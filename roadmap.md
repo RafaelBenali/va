@@ -4,8 +4,8 @@
 
 | Field | Value |
 |-------|-------|
-| Document Version | 2.1 |
-| Date | 2025-12-28 |
+| Document Version | 2.2 |
+| Date | 2026-01-05 |
 | Status | Draft |
 | Source Documents | requirements.md v1.1, priorities.md v1.0 |
 
@@ -758,78 +758,287 @@ Found 47 results (showing 1-5)
 
 ---
 
-## Phase 5: LLM Enhancement (Weeks 10-11) - OPTIONAL
+## Phase 5: LLM Enhancement (Weeks 10-12) - REDESIGNED
 
-**Theme:** AI-powered features (if budget/need exists)
+**Theme:** RAG Without Vectors - LLM Post Enrichment
 
-**Goal:** Add semantic understanding - this is optional!
+**Goal:** Add semantic understanding via keyword extraction without vector databases
 
-**Note:** This phase is entirely optional. The system works great with metrics-only search. Only implement if you need semantic topic analysis.
+**Note:** This phase enhances metrics-only search with LLM-extracted keywords.
+The key innovation is `implicit_keywords` - concepts related to content but
+NOT directly in the text, enabling RAG-like retrieval.
 
-### Batch 5.1 (Week 10)
+**Technical Docs:**
+- Architecture: `docs/WS-5-RAG-WITHOUT-VECTORS.md`
+- Task Breakdown: `docs/WS-5-TASK-BREAKDOWN.md`
+
+### Batch 5.1 (Week 10) - Foundation
 
 ---
 
-#### WS-5.1: LLM Integration
+#### WS-5.1: Groq Client Integration
 
 | Field | Value |
 |-------|-------|
 | **ID** | WS-5.1 |
-| **Name** | LLM Provider Integration |
-| **Description** | Connect to OpenAI/Anthropic for semantic analysis |
+| **Name** | Groq Client Integration |
+| **Description** | Set up Groq SDK and create abstraction layer for LLM calls |
 | **Dependencies** | WS-2.4 (Search) |
 | **Parallel With** | None |
-| **Effort** | M |
+| **Effort** | S |
+| **Status** | Not Started |
 
 **Tasks:**
-- [ ] Create LLM provider abstraction
-- [ ] Implement OpenAI client
-- [ ] Implement Anthropic client (optional)
-- [ ] Add API key secure storage
-- [ ] Implement cost tracking
-- [ ] Add graceful fallback to metrics-only
+- [ ] Install `groq` Python SDK
+- [ ] Add Groq settings to `src/tnse/core/config.py` (GROQ_API_KEY, GROQ_MODEL, GROQ_MAX_TOKENS, GROQ_TEMPERATURE)
+- [ ] Create `src/tnse/llm/__init__.py` module
+- [ ] Create `src/tnse/llm/groq_client.py` with async support, JSON mode, error handling
+- [ ] Add unit tests for Groq client
+- [ ] Update `.env.example` with new variables
 
 **Acceptance Criteria:**
-- [ ] LLM calls work
-- [ ] Fallback to metrics-only works
-- [ ] Costs tracked
+- [ ] Groq SDK installed and importable
+- [ ] Configuration validated at startup
+- [ ] Client can make API calls with JSON response mode
+- [ ] Error handling covers rate limits, auth errors, timeouts
+- [ ] Unit tests pass with mocked API responses
 
 ---
 
-#### WS-5.2: Semantic Topic Analysis
+#### WS-5.2: Database Schema (Post Enrichment)
 
 | Field | Value |
 |-------|-------|
 | **ID** | WS-5.2 |
-| **Name** | LLM-Powered Topic Categorization |
-| **Description** | Use LLM to categorize posts by topic |
-| **Dependencies** | WS-5.1 (LLM Integration) |
+| **Name** | Database Schema for Post Enrichment |
+| **Description** | Create tables and indexes for LLM-extracted metadata |
+| **Dependencies** | WS-5.1 |
 | **Parallel With** | None |
-| **Effort** | M |
+| **Effort** | S |
+| **Status** | Not Started |
 
 **Tasks:**
-- [ ] Create topic categorization prompts
-- [ ] Analyze posts for topic tags
-- [ ] Store topic tags per post
-- [ ] Add topic filter to search
-- [ ] Implement /mode command (llm/metrics-only toggle)
-- [ ] Cache LLM responses
+- [ ] Create SQLAlchemy model `PostEnrichment` in `src/tnse/db/models.py`
+- [ ] Create SQLAlchemy model `LLMUsageLog` for cost tracking
+- [ ] Create Alembic migration with GIN indexes on keyword arrays
+- [ ] Add relationship from `Post` to `PostEnrichment`
+- [ ] Test migration up/down
 
 **Acceptance Criteria:**
-- [ ] Posts tagged with topics
-- [ ] Topic filter works
-- [ ] Mode switching works
+- [ ] Migration applies successfully (up and down)
+- [ ] Models work with SQLAlchemy async sessions
+- [ ] GIN indexes created for keyword array searches
+- [ ] Relationship navigation works (post.enrichment)
 
 ---
 
-### Phase 5 Gate
+### Batch 5.2 (Week 11) - Core Services
+
+---
+
+#### WS-5.3: Enrichment Service Core
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-5.3 |
+| **Name** | Enrichment Service Core Logic |
+| **Description** | Service for extracting metadata from post content via LLM |
+| **Dependencies** | WS-5.1, WS-5.2 |
+| **Parallel With** | None |
+| **Effort** | M |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Create `src/tnse/llm/enrichment_service.py` with `EnrichmentResult` dataclass
+- [ ] Implement `enrich_post()` and `enrich_batch()` methods
+- [ ] Design prompt template for explicit/implicit keywords, category, sentiment, entities
+- [ ] Implement JSON parsing with validation
+- [ ] Handle edge cases (empty text, media-only, LLM refusal, rate limiting)
+- [ ] Add structured logging and unit tests
+
+**Acceptance Criteria:**
+- [ ] Service extracts all required fields from post content
+- [ ] JSON responses properly validated
+- [ ] Batch processing respects rate limits
+- [ ] Error handling is comprehensive
+- [ ] Unit tests cover happy path and error cases
+
+---
+
+#### WS-5.4: Celery Enrichment Tasks
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-5.4 |
+| **Name** | Celery Tasks for Post Enrichment |
+| **Description** | Async tasks for enriching posts via Celery |
+| **Dependencies** | WS-5.3, WS-8.1 (Celery pipeline working) |
+| **Parallel With** | None |
+| **Effort** | M |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Create `src/tnse/llm/tasks.py` with `enrich_post()`, `enrich_new_posts()`, `enrich_channel_posts()`
+- [ ] Add rate limiting (10 requests/minute default)
+- [ ] Implement retry logic with exponential backoff
+- [ ] Add metrics logging (posts processed, tokens used, time taken)
+- [ ] Add Celery beat schedule for `enrich_new_posts` (every 5 min)
+- [ ] Store enrichment results in database
+- [ ] Create unit and integration tests
+
+**Acceptance Criteria:**
+- [ ] Tasks can be triggered manually via Celery
+- [ ] Scheduled task processes new posts automatically
+- [ ] Rate limiting prevents API abuse
+- [ ] Failed tasks retry appropriately
+- [ ] Results stored in database correctly
+
+---
+
+### Batch 5.3 (Week 12) - Integration
+
+---
+
+#### WS-5.5: Enhanced Search Service
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-5.5 |
+| **Name** | Enhanced Search with Keyword Retrieval |
+| **Description** | Update search to query enriched keywords |
+| **Dependencies** | WS-5.2, WS-5.4 |
+| **Parallel With** | None |
+| **Effort** | M |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Update `src/tnse/search/service.py` with category/sentiment filters
+- [ ] Update SQL query to JOIN `post_enrichments`
+- [ ] Add keyword array matching using `&&` operator
+- [ ] Update `SearchResult` dataclass with enrichment fields
+- [ ] Implement hybrid search (full-text + keyword arrays)
+- [ ] Add ranking boost for implicit keyword matches
+- [ ] Performance testing: ensure < 3 second response time
+
+**Acceptance Criteria:**
+- [ ] Search finds posts via implicit keywords NOT in original text
+- [ ] Category and sentiment filters work correctly
+- [ ] Response time remains < 3 seconds
+- [ ] Backward compatible - works without enrichment data
+- [ ] Cache handles enrichment fields correctly
+
+---
+
+#### WS-5.6: Bot Integration
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-5.6 |
+| **Name** | Bot Commands for LLM Features |
+| **Description** | Add commands for LLM mode and enriched search |
+| **Dependencies** | WS-5.5 |
+| **Parallel With** | None |
+| **Effort** | M |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Create `src/tnse/bot/llm_handlers.py` with /mode, /enrich, /stats llm commands
+- [ ] Update search_handlers.py to display category/sentiment
+- [ ] Add `/search category:<name>` and `/search sentiment:<value>` filter syntax
+- [ ] Update SearchFormatter with enrichment display
+- [ ] Register new handlers and update help text
+- [ ] Add command alias: `/m` for `/mode`
+- [ ] Update bot menu commands list
+
+**Acceptance Criteria:**
+- [ ] Users can switch between LLM and metrics mode
+- [ ] Search results display enrichment metadata when available
+- [ ] Filter syntax works for category/sentiment
+- [ ] Help text documents new commands
+- [ ] Commands registered in bot menu
+
+---
+
+#### WS-5.7: Cost Tracking & Monitoring
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-5.7 |
+| **Name** | LLM Cost Tracking and Monitoring |
+| **Description** | Track token usage, estimate costs |
+| **Dependencies** | WS-5.4, WS-5.6 |
+| **Parallel With** | WS-5.8 |
+| **Effort** | S |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Create `src/tnse/llm/cost_tracker.py` with usage logging
+- [ ] Configure Groq pricing constants
+- [ ] Persist usage to `llm_usage_logs` table
+- [ ] Implement `/stats llm` command output (tokens, cost, posts enriched)
+- [ ] Add alert threshold configuration (`LLM_DAILY_COST_LIMIT_USD`)
+- [ ] Create unit tests for cost calculations
+
+**Acceptance Criteria:**
+- [ ] All LLM calls logged with token counts
+- [ ] Cost estimates accurate to pricing
+- [ ] `/stats llm` shows useful information
+- [ ] Warning logged when approaching cost limit
+- [ ] Historical data queryable
+
+---
+
+#### WS-5.8: Documentation & Testing
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-5.8 |
+| **Name** | Documentation and Integration Testing |
+| **Description** | Complete documentation and E2E testing |
+| **Dependencies** | WS-5.1 through WS-5.7 |
+| **Parallel With** | WS-5.7 |
+| **Effort** | S |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Update `CLAUDE.md` with LLM patterns and conventions
+- [ ] Create `docs/LLM_INTEGRATION.md` (architecture, config, prompts, cost management)
+- [ ] Update `docs/USER_GUIDE.md` with new commands and filter syntax
+- [ ] Update `docs/DEPLOYMENT.md` with Groq API setup
+- [ ] Create end-to-end integration tests
+- [ ] Performance testing and benchmarks
+- [ ] Update `roadmap.md` with WS-5 completion
+
+**Acceptance Criteria:**
+- [ ] All documentation complete and accurate
+- [ ] Integration tests pass
+- [ ] Performance benchmarks documented
+- [ ] No regressions in existing tests
+
+---
+
+### Phase 5 Gate (RAG Without Vectors Complete)
 
 | Criterion | Target |
 |-----------|--------|
-| LLM working | API calls succeed |
-| Fallback | Metrics-only still works |
-| Topic tagging | Posts categorized |
-| Caching | Costs reduced |
+| Groq client working | API calls succeed with JSON mode |
+| Enrichment pipeline | Posts automatically enriched via Celery |
+| Enhanced search | Finds posts via implicit keywords |
+| Bot integration | /mode, /enrich, /stats llm work |
+| Cost tracking | Token usage and costs monitored |
+| Fallback | Metrics-only mode still works |
+| Performance | Search < 3 seconds |
+
+**Environment Variables Required:**
+```bash
+GROQ_API_KEY=          # Required for LLM features
+GROQ_MODEL=qwen-qwq-32b
+GROQ_MAX_TOKENS=1024
+GROQ_TEMPERATURE=0.1
+ENRICHMENT_BATCH_SIZE=10
+ENRICHMENT_RATE_LIMIT=10
+LLM_DAILY_COST_LIMIT_USD=10.00
+```
 
 ---
 
@@ -1201,10 +1410,18 @@ Found 47 results (showing 1-5)
 
 ---
 
-## Updated Work Stream Quick Reference
+## Updated Work Stream Quick Reference (Phase 5-6)
 
 | ID | Name | Dependencies | Effort |
 |----|------|--------------|--------|
+| WS-5.1 | Groq Client Integration | WS-2.4 | S |
+| WS-5.2 | Database Schema (Post Enrichment) | WS-5.1 | S |
+| WS-5.3 | Enrichment Service Core | WS-5.1, WS-5.2 | M |
+| WS-5.4 | Celery Enrichment Tasks | WS-5.3, WS-8.1 | M |
+| WS-5.5 | Enhanced Search Service | WS-5.2, WS-5.4 | M |
+| WS-5.6 | Bot Integration (LLM) | WS-5.5 | M |
+| WS-5.7 | Cost Tracking & Monitoring | WS-5.4, WS-5.6 | S |
+| WS-5.8 | Documentation & Testing (LLM) | WS-5.1-5.7 | S |
 | WS-6.1 | Dependency Modernization | WS-4.3 | M |
 | WS-6.2 | Security Audit | WS-4.3 | M |
 | WS-6.3 | Python Modernization | WS-6.1 | M |
@@ -1226,7 +1443,7 @@ Found 47 results (showing 1-5)
 | Phase 2: Search + Ranking | 3 weeks | **MVP** - Working search with metrics |
 | Phase 3: Enhanced Features | 2 weeks | Topics, templates, polish |
 | Phase 4: Render.com Deployment | 1 week | **PRODUCTION** - Bot deployed on Render.com |
-| Phase 5: LLM (Optional) | 2 weeks | Semantic analysis |
+| Phase 5: LLM (RAG Without Vectors) | 2-3 weeks | Groq/Qwen3 enrichment, enhanced search |
 | Phase 6: Codebase Modernization | 2-3 weeks | December 2025 technology refresh + Bot enhancement |
 | **Total (with Modernization)** | **13-14 weeks** | Full implementation with modern stack and enhanced bot |
  
@@ -1269,8 +1486,26 @@ Found 47 results (showing 1-5)
         v
   [PRODUCTION DEPLOYED]
         |
-        v (optional)
-[WS-5.1: LLM] -> [WS-5.2: Semantic]
+        v
+[WS-5.1: Groq Client] -> [WS-5.2: DB Schema]
+        |
+        v
+[WS-5.3: Enrichment Service]
+        |
+        v
+[WS-5.4: Celery Tasks]
+        |
+        v
+[WS-5.5: Enhanced Search]
+        |
+        v
+[WS-5.6: Bot Integration]
+        |
+        v
+[WS-5.7: Cost Tracking] + [WS-5.8: Docs & Testing]
+        |
+        v
+  [RAG WITHOUT VECTORS COMPLETE]
         |
         v
 [WS-6.1: Dependencies] + [WS-6.2: Security Audit]
@@ -1633,17 +1868,18 @@ Currently re-fetches same messages each collection cycle because there's no trac
 | **Dependencies** | WS-8.3 |
 | **Parallel With** | WS-9.2 |
 | **Effort** | S |
-| **Status** | In Progress |
+| **Status** | Complete |
 | **Started** | 2026-01-04 |
+| **Completed** | 2026-01-04 |
 | **Assigned** | Claude Code |
 
 **Tasks:**
-- [ ] Research Telegram Bot API setMyCommands and MenuButton options
-- [ ] Configure bot commands list via BotFather or API
-- [ ] Add menu button to bot interface for command discoverability
-- [ ] Group commands by category (Channel, Search, Topic, Export, Settings)
-- [ ] Add unit tests for menu button setup
-- [ ] Update bot documentation with menu button usage
+- [x] Research Telegram Bot API setMyCommands and MenuButton options
+- [x] Configure bot commands list via BotFather or API
+- [x] Add menu button to bot interface for command discoverability
+- [x] Group commands by category (Channel, Search, Topic, Export, Settings)
+- [x] Add unit tests for menu button setup
+- [x] Update bot documentation with menu button usage
 
 **Deliverables:**
 - Menu button configuration in bot startup
@@ -1651,10 +1887,10 @@ Currently re-fetches same messages each collection cycle because there's no trac
 - Updated documentation
 
 **Acceptance Criteria:**
-- [ ] Menu button appears in Telegram bot interface
-- [ ] Clicking menu button shows available commands
-- [ ] Commands are organized in logical groups
-- [ ] Documentation updated
+- [x] Menu button appears in Telegram bot interface
+- [x] Clicking menu button shows available commands
+- [x] Commands are organized in logical groups
+- [x] Documentation updated
 
 ---
 
@@ -1668,19 +1904,20 @@ Currently re-fetches same messages each collection cycle because there's no trac
 | **Dependencies** | WS-8.1 (Celery tasks wired) |
 | **Parallel With** | WS-9.1 |
 | **Effort** | M |
-| **Status** | In Progress |
+| **Status** | Complete |
 | **Started** | 2026-01-04 |
+| **Completed** | 2026-01-04 |
 | **Assigned** | Claude Code |
 
 **Tasks:**
-- [ ] Add `/sync` command to trigger content collection for all channels
-- [ ] Add `/sync @channel` command to sync specific channel
-- [ ] Wire command to call `collect_channel_content` Celery task
-- [ ] Add progress feedback (typing indicator, status messages)
-- [ ] Restrict command to admin users (configurable whitelist)
-- [ ] Add rate limiting to prevent abuse (max 1 sync per 5 minutes)
-- [ ] Add unit tests for sync command handlers
-- [ ] Add integration test for sync workflow
+- [x] Add `/sync` command to trigger content collection for all channels
+- [x] Add `/sync @channel` command to sync specific channel
+- [x] Wire command to call `collect_channel_content` Celery task
+- [x] Add progress feedback (typing indicator, status messages)
+- [x] Restrict command to admin users (configurable whitelist)
+- [x] Add rate limiting to prevent abuse (max 1 sync per 5 minutes)
+- [x] Add unit tests for sync command handlers
+- [x] Add integration test for sync workflow
 
 **Bot Commands:**
 ```
@@ -1694,12 +1931,12 @@ Currently re-fetches same messages each collection cycle because there's no trac
 - Integration test for sync workflow
 
 **Acceptance Criteria:**
-- [ ] /sync command triggers content collection for all monitored channels
-- [ ] /sync @channel syncs specific channel only
-- [ ] User receives progress feedback during sync
-- [ ] Rate limiting prevents abuse (max 1 sync per 5 minutes)
-- [ ] Only authorized users can trigger sync
-- [ ] Tests verify sync command behavior
+- [x] /sync command triggers content collection for all monitored channels
+- [x] /sync @channel syncs specific channel only
+- [x] User receives progress feedback during sync
+- [x] Rate limiting prevents abuse (max 1 sync per 5 minutes)
+- [x] Only authorized users can trigger sync
+- [x] Tests verify sync command behavior
 
 ---
 
@@ -1722,7 +1959,7 @@ Currently re-fetches same messages each collection cycle because there's no trac
 | Phase 2: Search + Ranking | 3 weeks | **MVP** - Working search with metrics |
 | Phase 3: Enhanced Features | 2 weeks | Topics, templates, polish |
 | Phase 4: Render.com Deployment | 1 week | **PRODUCTION** - Bot deployed on Render.com |
-| Phase 5: LLM (Optional) | 2 weeks | Semantic analysis |
+| Phase 5: LLM (RAG Without Vectors) | 2-3 weeks | Groq/Qwen3 enrichment, enhanced search |
 | Phase 6: Codebase Modernization | 2-3 weeks | December 2025 technology refresh |
 | Phase 7: Critical Bug Fixes | 1 week | Dependency injection fixes (channel, search, topic services) |
 | Phase 8: Content Collection Fixes | 1-2 weeks | Wire Celery tasks, resume tracking |
@@ -1753,8 +1990,14 @@ Currently re-fetches same messages each collection cycle because there's no trac
 | WS-4.1 | Render.com Configuration | WS-3.3 | M | Complete |
 | WS-4.2 | Production Environment Configuration | WS-4.1 | S | Complete |
 | WS-4.3 | Deployment Documentation | WS-4.1, WS-4.2 | S | Complete |
-| WS-5.1 | LLM Integration (Optional) | WS-2.4 | M | Not Started |
-| WS-5.2 | Semantic Topic Analysis (Optional) | WS-5.1 | M | Not Started |
+| WS-5.1 | Groq Client Integration | WS-2.4 | S | Not Started |
+| WS-5.2 | Database Schema (Post Enrichment) | WS-5.1 | S | Not Started |
+| WS-5.3 | Enrichment Service Core | WS-5.1, WS-5.2 | M | Not Started |
+| WS-5.4 | Celery Enrichment Tasks | WS-5.3, WS-8.1 | M | Not Started |
+| WS-5.5 | Enhanced Search Service | WS-5.2, WS-5.4 | M | Not Started |
+| WS-5.6 | Bot Integration (LLM) | WS-5.5 | M | Not Started |
+| WS-5.7 | Cost Tracking & Monitoring | WS-5.4, WS-5.6 | S | Not Started |
+| WS-5.8 | Documentation & Testing (LLM) | WS-5.1-5.7 | S | Not Started |
 | WS-6.1 | Dependency Modernization | WS-4.3 | M | Complete |
 | WS-6.2 | Security Audit | WS-4.3 | M | Complete |
 | WS-6.3 | Python Modernization | WS-6.1 | M | Complete |
@@ -1772,8 +2015,8 @@ Currently re-fetches same messages each collection cycle because there's no trac
 | WS-8.1 | Wire Celery Tasks to ContentCollector | WS-7.4 | M | Complete |
 | WS-8.2 | Resume-from-Last-Point Tracking | WS-8.1 | M | Complete |
 | WS-8.3 | Roadmap Sync | None | S | Complete |
-| WS-9.1 | Bot Menu Button | WS-8.3 | S | In Progress |
-| WS-9.2 | Manual Channel Sync Command | WS-8.1 | M | Not Started |
+| WS-9.1 | Bot Menu Button | WS-8.3 | S | Complete |
+| WS-9.2 | Manual Channel Sync Command | WS-8.1 | M | Complete |
 
 ---
 
