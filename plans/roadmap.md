@@ -11,6 +11,8 @@
 | WS-8.1 | Wire Celery Tasks to ContentCollector | Complete | HIGH |
 | WS-8.2 | Resume-from-Last-Point Tracking | Complete | MEDIUM |
 | WS-8.3 | Roadmap Sync | Complete | LOW |
+| WS-9.1 | Bot Menu Button | Not Started | MEDIUM |
+| WS-9.2 | Manual Channel Sync Command | Not Started | MEDIUM |
 
 **Note:** WS-7.4 was originally "SearchService Async/Sync Context Manager Bug" in earlier versions.
 This was fixed during WS-7.3 implementation. The numbering was adjusted to align with root roadmap.md.
@@ -208,9 +210,66 @@ was fixed as part of WS-7.3 implementation. The AsyncSession context manager iss
 
 ---
 
+## Batch 9.1 (Current) - Bot UX Improvements
+
+### Phase 9.1.1: Bot Menu Button
+- **Status:** Not Started
+- **Priority:** MEDIUM
+- **Tasks:**
+  - [ ] Research Telegram Bot API setMyCommands and MenuButton options
+  - [ ] Configure bot commands list via BotFather or API
+  - [ ] Add menu button to bot interface for command discoverability
+  - [ ] Group commands by category (Channel, Search, Topic, Export, Settings)
+  - [ ] Add unit tests for menu button setup
+  - [ ] Update bot documentation with menu button usage
+- **Effort:** S
+- **Done When:**
+  - Menu button appears in Telegram bot interface
+  - Clicking menu button shows available commands
+  - Commands are organized in logical groups
+  - Documentation updated
+
+**Affected Files:**
+- `src/tnse/bot/__main__.py` (setup commands)
+- `src/tnse/bot/application.py` (menu configuration)
+- `docs/USER_GUIDE.md` (documentation)
+
+---
+
+### Phase 9.1.2: Manual Channel Sync Command
+- **Status:** Not Started
+- **Priority:** MEDIUM
+- **Depends On:** WS-8.1 (Celery tasks must be wired)
+- **Tasks:**
+  - [ ] Add `/sync` command to trigger content collection for all channels
+  - [ ] Add `/sync @channel` command to sync specific channel
+  - [ ] Wire command to call `collect_channel_content` Celery task
+  - [ ] Add progress feedback (typing indicator, status messages)
+  - [ ] Restrict command to admin users (configurable whitelist)
+  - [ ] Add rate limiting to prevent abuse (max 1 sync per 5 minutes)
+  - [ ] Add unit tests for sync command handlers
+  - [ ] Add integration test for sync workflow
+- **Effort:** M
+- **Done When:**
+  - /sync command triggers content collection for all monitored channels
+  - /sync @channel syncs specific channel only
+  - User receives progress feedback during sync
+  - Rate limiting prevents abuse
+  - Only authorized users can trigger sync
+  - Tests verify sync command behavior
+
+**Affected Files:**
+- `src/tnse/bot/sync_handlers.py` (new file)
+- `src/tnse/bot/handlers.py` (register new handlers)
+- `src/tnse/bot/application.py` (add sync handlers)
+- `tests/unit/bot/test_sync_handlers.py` (new tests)
+- `tests/integration/test_sync_workflow.py` (integration test)
+
+---
+
 ## Backlog
 
 - [ ] Phase 5 LLM Integration (optional)
-- [ ] Additional bot UX improvements
 - [ ] Performance optimization for large channel lists
 - [ ] Add /status command to show service health
+- [ ] Webhook mode for production deployment

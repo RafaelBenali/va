@@ -1294,10 +1294,22 @@ Found 47 results (showing 1-5)
   [MODERNIZATION COMPLETE]
         |
         v
-[WS-7.1: Bot DI Bug Fix]
+[WS-7.1: Bot DI Bug Fix] -> [WS-7.2] -> [WS-7.3] -> [WS-7.4]
         |
         v
-  [BUG FIX COMPLETE]
+  [BUG FIXES COMPLETE]
+        |
+        v
+[WS-8.1: Celery Tasks] + [WS-8.2: Resume Tracking]
+        |
+        v
+  [CONTENT COLLECTION COMPLETE]
+        |
+        v
+[WS-9.1: Menu Button] + [WS-9.2: Sync Command]
+        |
+        v
+  [BOT UX IMPROVEMENTS COMPLETE]
 ```
 
 ---
@@ -1578,7 +1590,7 @@ Currently re-fetches same messages each collection cycle because there's no trac
 **Tasks:**
 - [x] Read both roadmap.md (root) and plans/roadmap.md
 - [x] Fix WS-7.1 status inconsistency (was "Not Started" in root, "Complete" in plans)
-- [x] Add WS-7.2, WS-7.3, WS-7.4 to root roadmap
+- [x] Add WS-7.2, WS-7.3, WS-7.4, WS-7.5  to root roadmap
 - [x] Add WS-8.1, WS-8.2, WS-8.3 to both roadmaps
 - [x] Document service injection standard in both roadmaps
 - [x] Update plans/roadmap.md with new work streams
@@ -1601,6 +1613,103 @@ Currently re-fetches same messages each collection cycle because there's no trac
 
 ---
 
+## Phase 9: Bot UX Improvements (Week 15)
+
+**Theme:** Improve bot discoverability and add manual sync controls
+
+**Goal:** Make the bot more user-friendly with a menu button and allow admins to manually trigger content sync
+
+### Batch 9.1 (Current) - Parallel Execution
+
+---
+
+#### WS-9.1: Bot Menu Button
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-9.1 |
+| **Name** | Bot Menu Button |
+| **Description** | Add a menu button to the Telegram bot interface for better UX and command discoverability |
+| **Dependencies** | WS-8.3 |
+| **Parallel With** | WS-9.2 |
+| **Effort** | S |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Research Telegram Bot API setMyCommands and MenuButton options
+- [ ] Configure bot commands list via BotFather or API
+- [ ] Add menu button to bot interface for command discoverability
+- [ ] Group commands by category (Channel, Search, Topic, Export, Settings)
+- [ ] Add unit tests for menu button setup
+- [ ] Update bot documentation with menu button usage
+
+**Deliverables:**
+- Menu button configuration in bot startup
+- Grouped command list
+- Updated documentation
+
+**Acceptance Criteria:**
+- [ ] Menu button appears in Telegram bot interface
+- [ ] Clicking menu button shows available commands
+- [ ] Commands are organized in logical groups
+- [ ] Documentation updated
+
+---
+
+#### WS-9.2: Manual Channel Sync Command
+
+| Field | Value |
+|-------|-------|
+| **ID** | WS-9.2 |
+| **Name** | Manual Channel Sync Command |
+| **Description** | Add a new bot command that allows users/admins to manually trigger channel data synchronization using Celery tasks |
+| **Dependencies** | WS-8.1 (Celery tasks wired) |
+| **Parallel With** | WS-9.1 |
+| **Effort** | M |
+| **Status** | Not Started |
+
+**Tasks:**
+- [ ] Add `/sync` command to trigger content collection for all channels
+- [ ] Add `/sync @channel` command to sync specific channel
+- [ ] Wire command to call `collect_channel_content` Celery task
+- [ ] Add progress feedback (typing indicator, status messages)
+- [ ] Restrict command to admin users (configurable whitelist)
+- [ ] Add rate limiting to prevent abuse (max 1 sync per 5 minutes)
+- [ ] Add unit tests for sync command handlers
+- [ ] Add integration test for sync workflow
+
+**Bot Commands:**
+```
+/sync - Trigger content collection for all monitored channels
+/sync @channel - Trigger content collection for specific channel
+```
+
+**Deliverables:**
+- `src/tnse/bot/sync_handlers.py` (new file)
+- Unit tests for sync handlers
+- Integration test for sync workflow
+
+**Acceptance Criteria:**
+- [ ] /sync command triggers content collection for all monitored channels
+- [ ] /sync @channel syncs specific channel only
+- [ ] User receives progress feedback during sync
+- [ ] Rate limiting prevents abuse (max 1 sync per 5 minutes)
+- [ ] Only authorized users can trigger sync
+- [ ] Tests verify sync command behavior
+
+---
+
+### Phase 9 Gate
+
+| Criterion | Target |
+|-----------|--------|
+| Menu button working | Commands visible in bot menu |
+| Sync command working | /sync triggers Celery tasks |
+| Rate limiting | Abuse prevention in place |
+| Tests passing | All new tests pass |
+
+---
+
 ## Timeline Summary
 
 | Phase | Duration | End State |
@@ -1613,8 +1722,9 @@ Currently re-fetches same messages each collection cycle because there's no trac
 | Phase 6: Codebase Modernization | 2-3 weeks | December 2025 technology refresh |
 | Phase 7: Critical Bug Fixes | 1 week | Dependency injection fixes (channel, search, topic services) |
 | Phase 8: Content Collection Fixes | 1-2 weeks | Wire Celery tasks, resume tracking |
-| **Total (without LLM)** | **11-12 weeks** | Full production deployment with working collection |
-| **Total (with LLM)** | **13-14 weeks** | Full implementation with AI |
+| Phase 9: Bot UX Improvements | 1 week | Menu button, manual sync command |
+| **Total (without LLM)** | **12-13 weeks** | Full production deployment with UX improvements |
+| **Total (with LLM)** | **14-15 weeks** | Full implementation with AI |
 
 ---
 
@@ -1658,6 +1768,8 @@ Currently re-fetches same messages each collection cycle because there's no trac
 | WS-8.1 | Wire Celery Tasks to ContentCollector | WS-7.4 | M | Complete |
 | WS-8.2 | Resume-from-Last-Point Tracking | WS-8.1 | M | Complete |
 | WS-8.3 | Roadmap Sync | None | S | Complete |
+| WS-9.1 | Bot Menu Button | WS-8.3 | S | Not Started |
+| WS-9.2 | Manual Channel Sync Command | WS-8.1 | M | Not Started |
 
 ---
 
