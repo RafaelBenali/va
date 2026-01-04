@@ -786,7 +786,9 @@ NOT directly in the text, enabling RAG-like retrieval.
 | **Dependencies** | WS-2.4 (Search) |
 | **Parallel With** | None |
 | **Effort** | S |
-| **Status** | Not Started |
+| **Status** | In Progress |
+| **Started** | 2026-01-05 |
+| **Assigned** | Claude Code |
 
 **Tasks:**
 - [ ] Install `groq` Python SDK

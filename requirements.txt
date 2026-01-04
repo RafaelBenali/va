@@ -26,6 +26,9 @@ celery>=5.4.0
 # HTTP Client
 httpx>=0.27.0
 
+# LLM Providers (WS-5.1: Groq Client Integration)
+groq>=0.13.0
+
 # Telegram Bot (WS-6.8: Updated to 21.9+ for December 2025 compatibility)
 # Version 21.9+ supports Bot API 8.x, version 22.x adds Bot API 9.x support
 # Note: Version 22.0 removed v20.x deprecations - ensure handlers use current patterns

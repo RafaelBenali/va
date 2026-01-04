@@ -168,7 +168,12 @@ class TelegramSettings(BaseSettings):
     For production (Render.com), webhook mode is recommended.
     """
 
-    model_config = SettingsConfigDict(env_prefix="TELEGRAM_", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="TELEGRAM_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     bot_token: str | None = Field(default=None, description="Telegram bot token")
     api_id: str | None = Field(default=None, description="Telegram API ID")
@@ -180,12 +185,32 @@ class TelegramSettings(BaseSettings):
     )
 
 
+class GroqSettings(BaseSettings):
+    """Groq API configuration for LLM-based post enrichment.
+
+    WS-5.1: Groq Client Integration
+    Supports JSON mode, rate limiting, and error handling.
+    Free tier: 30 RPM (requests per minute).
+    """
+
+    model_config = SettingsConfigDict(env_prefix="GROQ_")
+
+    api_key: str | None = Field(default=None, description="Groq API key")
+    model: str = Field(default="qwen-qwq-32b", description="Groq model ID")
+    max_tokens: int = Field(default=1024, description="Max tokens for response")
+    temperature: float = Field(default=0.1, description="Temperature for generation")
+    enabled: bool = Field(default=False, description="Enable Groq LLM features")
+    rate_limit_rpm: int = Field(default=30, description="Rate limit in requests per minute")
+    timeout_seconds: float = Field(default=30.0, description="Request timeout in seconds")
+    max_retries: int = Field(default=3, description="Max retries on transient failures")
+
+
 class LLMSettings(BaseSettings):
     """LLM API configuration."""
 
     enabled: bool = Field(default=False, alias="LLM_ENABLED", description="Enable LLM mode")
     provider: str = Field(
-        default="openai", alias="LLM_PROVIDER", description="LLM provider (openai, anthropic)"
+        default="groq", alias="LLM_PROVIDER", description="LLM provider (groq, openai, anthropic)"
     )
     openai_api_key: str | None = Field(
         default=None, alias="OPENAI_API_KEY", description="OpenAI API key"
@@ -278,6 +303,7 @@ class Settings(BaseSettings):
     celery: CelerySettings = Field(default_factory=CelerySettings)
     telegram: TelegramSettings = Field(default_factory=TelegramSettings)
     llm: LLMSettings = Field(default_factory=LLMSettings)
+    groq: GroqSettings = Field(default_factory=GroqSettings)
     reaction_weights: ReactionWeightSettings = Field(
         default_factory=ReactionWeightSettings
     )
