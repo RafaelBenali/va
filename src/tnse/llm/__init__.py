@@ -1,5 +1,5 @@
 """
-LLM Integration Module (WS-5.1, WS-5.3)
+LLM Integration Module (WS-5.1, WS-5.3, WS-5.4)
 
 Provides LLM client integrations for post enrichment.
 Currently supports Groq as the primary provider.
@@ -14,6 +14,10 @@ Usage:
     # For post enrichment:
     service = EnrichmentService(llm_client=client)
     enrichment = await service.enrich_post(post_id=123, text="Post content...")
+
+    # For Celery tasks (WS-5.4):
+    from src.tnse.llm import tasks
+    tasks.enrich_post.delay(post_id=123)
 """
 
 from src.tnse.llm.base import CompletionResult, LLMProvider
@@ -32,6 +36,8 @@ from src.tnse.llm.enrichment_service import (
     EnrichmentSettings,
     ENRICHMENT_PROMPT,
 )
+# Import tasks module for easy access
+from src.tnse.llm import tasks
 
 __all__ = [
     # Base classes
@@ -45,6 +51,8 @@ __all__ = [
     "EnrichmentService",
     "EnrichmentSettings",
     "ENRICHMENT_PROMPT",
+    # Celery tasks (WS-5.4)
+    "tasks",
     # Exceptions
     "GroqConfigurationError",
     "GroqAuthenticationError",

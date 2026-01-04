@@ -4,10 +4,12 @@ TNSE Celery Application Configuration
 Provides Celery application setup for background task processing.
 
 Work Stream: WS-1.6 - Content Collection Pipeline
+Work Stream: WS-5.4 - Celery Tasks for Post Enrichment
 
 Requirements addressed:
 - Set up Celery/RQ with Redis
-- Schedule periodic runs (every 15-30 min)
+- Schedule periodic runs (every 15-30 min for content collection)
+- Schedule LLM enrichment runs (every 5 min)
 """
 
 from celery import Celery
@@ -50,9 +52,11 @@ def create_celery_app() -> Celery:
         worker_disable_rate_limits=False,
         # Result settings
         result_expires=86400,  # Results expire after 24 hours
-        # Task discovery
-        imports=["src.tnse.pipeline.tasks"],
-        include=["src.tnse.pipeline.tasks"],
+        # Beat scheduler settings
+        beat_schedule_filename="/tmp/celerybeat-schedule",  # Writable location in containers
+        # Task discovery - include both pipeline and LLM tasks
+        imports=["src.tnse.pipeline.tasks", "src.tnse.llm.tasks"],
+        include=["src.tnse.pipeline.tasks", "src.tnse.llm.tasks"],
     )
 
     return app
@@ -69,6 +73,14 @@ celery_app.conf.beat_schedule = {
         "schedule": 900.0,  # 15 minutes in seconds
         "options": {
             "expires": 840.0,  # Expire if not started within 14 minutes
+        },
+    },
+    "enrich-new-posts-every-5-minutes": {
+        "task": "src.tnse.llm.tasks.enrich_new_posts",
+        "schedule": 300.0,  # 5 minutes in seconds
+        "kwargs": {"limit": 50},  # Process up to 50 posts per run
+        "options": {
+            "expires": 280.0,  # Expire if not started within 4.5 minutes
         },
     },
 }
