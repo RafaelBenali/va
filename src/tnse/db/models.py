@@ -14,6 +14,8 @@ from enum import Enum
 from typing import Optional
 from uuid import uuid4
 
+from decimal import Decimal
+
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -22,11 +24,12 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    Numeric,
     String,
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.tnse.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -263,6 +266,12 @@ class Post(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     engagement_metrics: Mapped[list["EngagementMetrics"]] = relationship(
         "EngagementMetrics",
         back_populates="post",
+        cascade="all, delete-orphan",
+    )
+    enrichment: Mapped["PostEnrichment | None"] = relationship(
+        "PostEnrichment",
+        back_populates="post",
+        uselist=False,
         cascade="all, delete-orphan",
     )
 
@@ -646,3 +655,145 @@ class BotSettings(Base, UUIDPrimaryKeyMixin):
 
     def __repr__(self) -> str:
         return f"<BotSettings(id={self.id}, key={self.key})>"
+
+
+class PostEnrichment(Base, UUIDPrimaryKeyMixin):
+    """Model storing LLM-enriched metadata for posts.
+
+    Stores extracted keywords, categories, sentiment, and entities
+    from LLM analysis of post content. Enables RAG-like retrieval
+    using keyword arrays instead of vector embeddings.
+
+    WS-5.2: Database Schema for Post Enrichment
+
+    Attributes:
+        id: Unique identifier (UUID)
+        post_id: Reference to the parent post (one-to-one)
+        explicit_keywords: Keywords directly present in the text
+        implicit_keywords: Related concepts NOT in text (key for RAG)
+        category: Primary topic category (politics, tech, etc.)
+        sentiment: Sentiment classification (positive/negative/neutral)
+        entities: Named entities as JSONB (people, organizations, places)
+        model_used: LLM model identifier used for enrichment
+        token_count: Total tokens used in the enrichment request
+        processing_time_ms: Time taken for LLM processing
+        enriched_at: When the enrichment was performed
+    """
+
+    __tablename__ = "post_enrichments"
+
+    post_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("posts.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    explicit_keywords: Mapped[list[str] | None] = mapped_column(
+        ARRAY(Text),
+        nullable=True,
+    )
+    implicit_keywords: Mapped[list[str] | None] = mapped_column(
+        ARRAY(Text),
+        nullable=True,
+    )
+    category: Mapped[Optional[str]] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+    )
+    sentiment: Mapped[Optional[str]] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+    entities: Mapped[dict | None] = mapped_column(
+        JSONB,
+        nullable=True,
+    )
+    model_used: Mapped[Optional[str]] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+    token_count: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+    processing_time_ms: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+    enriched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    # Relationships
+    post: Mapped["Post"] = relationship(
+        "Post",
+        back_populates="enrichment",
+    )
+
+    def __repr__(self) -> str:
+        return f"<PostEnrichment(id={self.id}, post_id={self.post_id}, category={self.category})>"
+
+
+class LLMUsageLog(Base, UUIDPrimaryKeyMixin):
+    """Model storing LLM API usage logs for cost tracking.
+
+    Records token usage and estimated costs for LLM API calls.
+    Enables monitoring of usage patterns and cost management.
+
+    WS-5.2: Database Schema for Post Enrichment
+
+    Attributes:
+        id: Unique identifier (UUID)
+        model: LLM model identifier used
+        prompt_tokens: Number of tokens in the prompt
+        completion_tokens: Number of tokens in the response
+        total_tokens: Total tokens used (prompt + completion)
+        estimated_cost_usd: Estimated cost in USD
+        task_name: Name of the task/operation
+        posts_processed: Number of posts processed in this call
+        created_at: When the API call was made
+    """
+
+    __tablename__ = "llm_usage_logs"
+
+    model: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+    )
+    prompt_tokens: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+    completion_tokens: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+    total_tokens: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+    estimated_cost_usd: Mapped[Decimal | None] = mapped_column(
+        Numeric(10, 6),
+        nullable=True,
+    )
+    task_name: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+    posts_processed: Mapped[int] = mapped_column(
+        Integer,
+        default=1,
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<LLMUsageLog(id={self.id}, model={self.model}, tokens={self.total_tokens})>"
