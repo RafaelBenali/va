@@ -4,6 +4,9 @@
 
 | ID | Name | Status | Priority |
 |----|------|--------|----------|
+| WS-5.1 | Groq Client Integration | Complete | HIGH |
+| WS-5.2 | Database Schema (Post Enrichment) | Not Started | HIGH |
+| WS-5.3 | Enrichment Service Core | Not Started | HIGH |
 | WS-7.1 | Bot Service Dependency Injection Bug Fix | Complete | HIGH |
 | WS-7.2 | TelethonClient Auto-Connect Bug Fix | Complete | HIGH |
 | WS-7.3 | Search Service Injection Bug Fix | Complete | HIGH |
@@ -305,9 +308,85 @@ The fix uses `async with db_session_factory() as session:` to ensure automatic c
 
 ---
 
+## Batch 5 (In Progress) - LLM Integration (RAG Without Vectors)
+
+### Phase 5.1: Groq Client Integration
+- **Status:** Complete
+- **Started:** 2026-01-05
+- **Completed:** 2026-01-05
+- **Priority:** HIGH
+- **Assigned:** tdd-coder-ws51
+- **Tasks:**
+  - [x] Install `groq` Python SDK
+  - [x] Add GroqSettings to `src/tnse/core/config.py`
+  - [x] Create `src/tnse/llm/__init__.py` module
+  - [x] Create `src/tnse/llm/base.py` with LLMProvider interface
+  - [x] Create `src/tnse/llm/groq_client.py` with:
+    - GroqClient async class
+    - JSON mode support
+    - Rate limiting (30 RPM free tier)
+    - Error handling and retries
+    - Token counting in CompletionResult
+  - [x] Add 30 unit tests for Groq client
+  - [x] Update `.env.example` with new variables
+- **Effort:** S
+- **Done When:**
+  - Groq SDK installed and importable
+  - Configuration validated at startup
+  - Client can make API calls with JSON response mode
+  - Error handling covers rate limits, auth errors, timeouts
+  - Unit tests pass with mocked API responses
+
+**Affected Files:**
+- `src/tnse/llm/__init__.py`
+- `src/tnse/llm/base.py`
+- `src/tnse/llm/groq_client.py`
+- `src/tnse/core/config.py`
+- `tests/unit/llm/test_groq_client.py`
+- `requirements.txt`
+- `.env.example`
+
+---
+
+### Phase 5.2: Database Schema (Post Enrichment)
+- **Status:** Not Started
+- **Priority:** HIGH
+- **Depends On:** WS-5.1
+- **Tasks:**
+  - [ ] Create SQLAlchemy model `PostEnrichment`
+  - [ ] Create SQLAlchemy model `LLMUsageLog`
+  - [ ] Create Alembic migration with GIN indexes
+  - [ ] Test migration up/down
+- **Effort:** S
+- **Done When:**
+  - Migration applies successfully
+  - Models work with SQLAlchemy async sessions
+  - GIN indexes created for keyword array searches
+
+---
+
+### Phase 5.3: Enrichment Service Core
+- **Status:** Not Started
+- **Priority:** HIGH
+- **Depends On:** WS-5.1, WS-5.2
+- **Tasks:**
+  - [ ] Create `src/tnse/llm/enrichment_service.py`
+  - [ ] Implement prompt templates for keyword extraction
+  - [ ] Handle edge cases and error handling
+- **Effort:** M
+- **Done When:**
+  - Service extracts keywords, category, sentiment from posts
+  - JSON responses properly validated
+
+---
+
+See `docs/WS-5-TASK-BREAKDOWN.md` for complete task breakdown of WS-5.1 through WS-5.8.
+
+---
+
 ## Backlog
 
-- [ ] Phase 5 LLM Integration (optional)
+- [x] Phase 5 LLM Integration (optional) - NOW IN PROGRESS as WS-5.x
 - [ ] Performance optimization for large channel lists
 - [ ] Add /status command to show service health
 - [ ] Webhook mode for production deployment
