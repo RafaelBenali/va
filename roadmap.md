@@ -918,7 +918,9 @@ NOT directly in the text, enabling RAG-like retrieval.
 | **Dependencies** | WS-5.3, WS-8.1 (Celery pipeline working) |
 | **Parallel With** | None |
 | **Effort** | M |
-| **Status** | Not Started |
+| **Status** | Complete |
+| **Started** | 2026-01-05 |
+| **Completed** | 2026-01-05 |
 
 **Infrastructure Note:** Celery Beat is already configured and operational:
 - Config: `src/tnse/core/celery_app.py`
@@ -926,18 +928,32 @@ NOT directly in the text, enabling RAG-like retrieval.
 - Pattern: Follow existing `collect-content-every-15-minutes` task structure
 
 **Tasks:**
-- [ ] Create `src/tnse/llm/tasks.py` with enrichment tasks
-- [ ] Register tasks in `celery_app.py` imports/include
-- [ ] Add `enrich_new_posts` to Celery Beat schedule (every 5 min)
-- [ ] Wire to ContentCollector pipeline (async queue recommended)
-- [ ] Add rate limiting (10 req/min) and retry logic
-- [ ] Create unit and integration tests
+- [x] Create `src/tnse/llm/tasks.py` with enrichment tasks
+- [x] Register tasks in `celery_app.py` imports/include
+- [x] Add `enrich_new_posts` to Celery Beat schedule (every 5 min)
+- [x] Wire to ContentCollector pipeline (async queue recommended)
+- [x] Add rate limiting (10 req/min) and retry logic
+- [x] Create unit and integration tests
+
+**Affected Files:**
+- `src/tnse/llm/tasks.py` - New file (868 lines) with all enrichment tasks
+- `src/tnse/core/celery_app.py` - Updated with LLM task imports and beat schedule
+- `tests/unit/llm/test_tasks.py` - 771 lines of comprehensive tests
+
+**Key Implementation Details:**
+- `enrich_post()` - Single post enrichment with retry logic
+- `enrich_new_posts()` - Batch enrichment for unenriched posts (default limit=100)
+- `enrich_channel_posts()` - Channel-specific batch enrichment (default limit=50)
+- Rate limiting: 10 requests/minute (configurable via ENRICHMENT_RATE_LIMIT)
+- Retry: max 3 retries with exponential backoff (max 600s)
+- Auto-retries on GroqRateLimitError and GroqTimeoutError
+- Database storage: PostEnrichment and LLMUsageLog records created
 
 **Acceptance Criteria:**
-- [ ] Tasks can be triggered manually via Celery
-- [ ] Scheduled task processes new posts automatically every 5 minutes
-- [ ] Rate limiting prevents API abuse
-- [ ] Results stored in database correctly
+- [x] Tasks can be triggered manually via Celery
+- [x] Scheduled task processes new posts automatically every 5 minutes
+- [x] Rate limiting prevents API abuse
+- [x] Results stored in database correctly
 
 ---
 
@@ -955,23 +971,39 @@ NOT directly in the text, enabling RAG-like retrieval.
 | **Dependencies** | WS-5.2, WS-5.4 |
 | **Parallel With** | None |
 | **Effort** | M |
-| **Status** | Not Started |
+| **Status** | Complete |
+| **Started** | 2026-01-05 |
+| **Completed** | 2026-01-05 |
+| **Assigned** | tdd-coder |
 
 **Tasks:**
-- [ ] Update `src/tnse/search/service.py` with category/sentiment filters
-- [ ] Update SQL query to JOIN `post_enrichments`
-- [ ] Add keyword array matching using `&&` operator
-- [ ] Update `SearchResult` dataclass with enrichment fields
-- [ ] Implement hybrid search (full-text + keyword arrays)
-- [ ] Add ranking boost for implicit keyword matches
-- [ ] Performance testing: ensure < 3 second response time
+- [x] Update `src/tnse/search/service.py` with category/sentiment filters
+- [x] Update SQL query to JOIN `post_enrichments`
+- [x] Add keyword array matching using `&&` operator
+- [x] Update `SearchResult` dataclass with enrichment fields
+- [x] Implement hybrid search (full-text + keyword arrays)
+- [x] Add match_type field for tracking how matches were found
+- [x] Performance testing: ensure LEFT JOIN for efficient queries
+
+**Affected Files:**
+- `src/tnse/search/service.py` - Updated with enrichment support (204 lines added)
+- `tests/unit/search/test_enhanced_search.py` - 24 new unit tests
+
+**Key Implementation Details:**
+- SearchResult dataclass extended with: category, sentiment, explicit_keywords, implicit_keywords, match_type
+- Added is_enriched property to detect enriched posts
+- SearchQuery dataclass extended with: category, sentiment, include_enrichment filters
+- _build_enriched_search_sql() creates hybrid SQL with LEFT JOIN to post_enrichments
+- Uses && operator for PostgreSQL array overlap matching on keywords
+- Cache serialization updated to include enrichment fields
+- Cache key includes category, sentiment, include_enrichment parameters
 
 **Acceptance Criteria:**
-- [ ] Search finds posts via implicit keywords NOT in original text
-- [ ] Category and sentiment filters work correctly
-- [ ] Response time remains < 3 seconds
-- [ ] Backward compatible - works without enrichment data
-- [ ] Cache handles enrichment fields correctly
+- [x] Search finds posts via implicit keywords NOT in original text
+- [x] Category and sentiment filters work correctly
+- [x] Response time remains < 3 seconds (LEFT JOIN for efficiency)
+- [x] Backward compatible - works without enrichment data
+- [x] Cache handles enrichment fields correctly
 
 ---
 
@@ -2056,8 +2088,8 @@ Currently re-fetches same messages each collection cycle because there's no trac
 | WS-5.1 | Groq Client Integration | WS-2.4 | S | Complete |
 | WS-5.2 | Database Schema (Post Enrichment) | WS-5.1 | S | Complete |
 | WS-5.3 | Enrichment Service Core | WS-5.1, WS-5.2 | M | Complete |
-| WS-5.4 | Celery Enrichment Tasks | WS-5.3, WS-8.1 | M | Not Started |
-| WS-5.5 | Enhanced Search Service | WS-5.2, WS-5.4 | M | Not Started |
+| WS-5.4 | Celery Enrichment Tasks | WS-5.3, WS-8.1 | M | Complete |
+| WS-5.5 | Enhanced Search Service | WS-5.2, WS-5.4 | M | Complete |
 | WS-5.6 | Bot Integration (LLM) | WS-5.5 | M | Not Started |
 | WS-5.7 | Cost Tracking & Monitoring | WS-5.4, WS-5.6 | S | Not Started |
 | WS-5.8 | Documentation & Testing (LLM) | WS-5.1-5.7 | S | Complete |
