@@ -542,6 +542,153 @@ Formula: `combined_score = relative_engagement * (1 - hours_since_post / 24)`
 
 ---
 
+## LLM Enhancement Commands (Phase 5)
+
+When LLM mode is enabled, the bot provides enhanced search capabilities using AI-extracted keywords and metadata.
+
+### /mode
+
+Switch between LLM-enhanced and metrics-only search modes.
+
+**Usage:**
+```
+/mode              # Show current mode
+/mode llm          # Switch to LLM mode (requires GROQ_API_KEY)
+/mode metrics      # Switch to metrics-only mode
+```
+
+**Response:**
+```
+Current Search Mode: LLM Enhanced
+
+In LLM mode, search includes:
+- AI-extracted keywords (explicit and implicit)
+- Category filtering (politics, technology, etc.)
+- Sentiment analysis (positive/negative/neutral)
+
+Use /mode metrics to switch to metrics-only mode.
+```
+
+**Alias:** `/m`
+
+### /enrich
+
+Manually trigger LLM enrichment for a channel's posts.
+
+**Usage:**
+```
+/enrich @channel_username
+```
+
+**Example:**
+```
+/enrich @telegram_news
+```
+
+**Response:**
+```
+Enrichment Started
+
+Channel: @telegram_news
+Posts queued: 25 unenriched posts
+
+Progress will be logged. This may take several minutes.
+Use /stats llm to monitor progress.
+```
+
+**Notes:**
+- Requires GROQ_API_KEY to be configured
+- Rate limited to prevent API abuse
+- Enrichment runs asynchronously via Celery
+
+### /stats llm
+
+View LLM usage statistics and costs.
+
+**Usage:**
+```
+/stats llm
+```
+
+**Response:**
+```
+LLM Usage Statistics (Last 7 Days)
+
+API Calls: 1,234
+Tokens Used: 456,789
+Estimated Cost: $0.24
+
+Posts Enriched: 1,150
+Success Rate: 98.5%
+
+Model: qwen-qwq-32b
+Provider: Groq
+
+Daily Breakdown:
+  Today: 156 posts, 45,678 tokens, $0.03
+  Yesterday: 203 posts, 61,234 tokens, $0.04
+  ...
+```
+
+### Enhanced Search Filters
+
+When LLM mode is enabled, search supports additional filters:
+
+**Category Filter:**
+```
+/search corruption category:politics
+/search AI news category:technology
+/search olympics category:sports
+```
+
+Valid categories: `politics`, `economics`, `technology`, `sports`, `entertainment`, `health`, `military`, `crime`, `society`, `other`
+
+**Sentiment Filter:**
+```
+/search election sentiment:positive
+/search scandal sentiment:negative
+/search weather sentiment:neutral
+```
+
+**Combined Filters:**
+```
+/search breaking news category:politics sentiment:negative
+```
+
+### Enhanced Search Results
+
+When posts have enrichment data, results show additional metadata:
+
+```
+Search: "corruption news"
+Found 47 results (showing 1-5)
+
+1. [BBC News] - 12.5K views
+   Preview: Minister caught accepting bribes from...
+   Reactions: [thumbs_up] 150 | [heart] 89 | [fire] 34
+   Category: politics | Sentiment: negative
+   Keywords: bribery, scandal, government
+   Score: 0.25 | 2h ago
+   [View Post](https://t.me/bbc_news/12345)
+
+2. [Reuters] - 8.2K views
+   ...
+
+[<< Prev] [1/10] [Next >>]
+```
+
+### Implicit Keyword Search
+
+The key innovation of LLM mode is implicit keyword search. Posts can be found by concepts NOT directly in the text:
+
+**Example:**
+- Post content: "iPhone 15 Pro Max announced with new titanium design"
+- Search "Apple smartphone" will find this post (even though "Apple" and "smartphone" are not in the text)
+
+This works because the LLM extracts implicit keywords like "Apple", "smartphone", "iOS", "tech gadget" during enrichment.
+
+---
+
 ## Quick Reference
 
 | Command | Alias | Description |
@@ -563,6 +710,10 @@ Formula: `combined_score = relative_engagement * (1 - hours_since_post / 24)`
 | `/usetemplate <name>` | - | Run template search |
 | `/import` | - | Bulk import channels (with file) |
 | `/health` | - | Show channel health status |
+| `/sync` | - | Manually trigger content sync |
+| `/mode [llm\|metrics]` | `/m` | Switch search mode |
+| `/enrich @channel` | - | Trigger LLM enrichment |
+| `/stats llm` | - | View LLM usage stats |
 
 ---
 
@@ -577,10 +728,12 @@ For faster access, the following command aliases are available:
 | `/help` | `/h` |
 | `/topics` | `/t` |
 | `/export` | `/e` |
+| `/mode` | `/m` |
 
 **Example:**
 ```
 /s corruption news    # Same as /search corruption news
 /ch                   # Same as /channels
 /e json               # Same as /export json
+/m llm                # Same as /mode llm
 ```

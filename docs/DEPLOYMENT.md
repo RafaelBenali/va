@@ -118,12 +118,46 @@ BOT_WEBHOOK_URL=https://your-domain.com/webhook
 # Celery (Background Tasks)
 CELERY_BROKER_URL=redis://localhost:6379/0
 CELERY_RESULT_BACKEND=redis://localhost:6379/0
-
-# LLM Mode (Optional)
-LLM_ENABLED=false
-LLM_PROVIDER=openai
-LLM_API_KEY=your_api_key
 ```
+
+### Groq API Configuration (LLM Features)
+
+To enable LLM-based post enrichment and enhanced search:
+
+```bash
+# Groq API (Required for LLM features)
+GROQ_API_KEY=gsk_your_api_key_here
+GROQ_MODEL=qwen-qwq-32b
+GROQ_MAX_TOKENS=1024
+GROQ_TEMPERATURE=0.1
+GROQ_ENABLED=true
+GROQ_RATE_LIMIT_RPM=30
+GROQ_TIMEOUT_SECONDS=30.0
+GROQ_MAX_RETRIES=3
+
+# Enrichment Settings
+ENRICHMENT_BATCH_SIZE=10
+ENRICHMENT_RATE_LIMIT=10
+```
+
+**Obtaining Groq API Key:**
+
+1. Go to [console.groq.com](https://console.groq.com)
+2. Create an account or sign in
+3. Navigate to API Keys section
+4. Click "Create API Key"
+5. Copy the key (starts with `gsk_`)
+6. Add to your `.env` file as `GROQ_API_KEY`
+
+**Free Tier Limits:**
+- 30 requests per minute
+- 14,400 requests per day
+- Variable token limits by model
+
+**Production Considerations:**
+- Monitor usage via `/stats llm` command
+- Set `ENRICHMENT_RATE_LIMIT=10` to stay well under limits
+- Consider paid tier for high-volume deployments
 
 ---
 
@@ -681,6 +715,27 @@ These are set automatically by Render - do not modify:
 | `LOG_LEVEL` | `INFO` | Logging verbosity (DEBUG, INFO, WARNING, ERROR) |
 | `CONTENT_WINDOW_HOURS` | `24` | Hours of content to collect |
 | `COLLECTION_INTERVAL_MINUTES` | `15` | Content collection frequency |
+
+#### LLM Enhancement Variables (Optional)
+
+To enable Groq-powered LLM enrichment on Render:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GROQ_API_KEY` | Yes (for LLM) | Groq API key from [console.groq.com](https://console.groq.com) |
+| `GROQ_MODEL` | No | Model ID (default: `qwen-qwq-32b`) |
+| `GROQ_ENABLED` | No | Set to `true` to enable LLM features |
+| `ENRICHMENT_RATE_LIMIT` | No | Requests per minute (default: `10`) |
+
+**Important:** Add `GROQ_API_KEY` to these services:
+- `tnse-celery-worker` (processes enrichment tasks)
+- `tnse-bot` (for `/enrich` and `/stats llm` commands)
+
+**Cost Considerations for Render:**
+- Groq free tier is sufficient for most deployments
+- Estimated cost: ~$0.01 per 100 posts enriched
+- Monitor usage with `/stats llm` command
+- Set `ENRICHMENT_RATE_LIMIT=10` to avoid rate limits
 
 ---
 

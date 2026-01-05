@@ -167,6 +167,95 @@ TELEGRAM_API_ID=your_api_id
 TELEGRAM_API_HASH=your_api_hash
 ```
 
+## LLM Integration Patterns (Phase 5)
+
+The project includes LLM-based post enrichment for semantic search capabilities ("RAG Without Vectors").
+
+### Module Structure
+
+```
+src/tnse/llm/
+├── __init__.py          # Module exports
+├── base.py              # LLMProvider interface, CompletionResult dataclass
+├── groq_client.py       # GroqClient implementation with rate limiting
+├── enrichment_service.py # EnrichmentService for post metadata extraction
+└── tasks.py             # Celery tasks for async enrichment
+```
+
+### Usage Patterns
+
+**Basic LLM Completion:**
+```python
+from src.tnse.llm import GroqClient
+
+async with GroqClient(api_key="your-key") as client:
+    result = await client.complete("Your prompt here")
+    print(result.content)
+```
+
+**JSON Mode (Structured Output):**
+```python
+result = await client.complete_json("Return JSON with keys: name, age")
+print(result.parsed_json)  # Automatically parsed dict
+```
+
+**Post Enrichment:**
+```python
+from src.tnse.llm import EnrichmentService, GroqClient
+
+client = GroqClient(api_key="your-key")
+service = EnrichmentService(llm_client=client)
+result = await service.enrich_post(post_id=123, text="Post content...")
+# result contains: explicit_keywords, implicit_keywords, category, sentiment, entities
+```
+
+**Celery Tasks:**
+```python
+from src.tnse.llm import tasks
+
+# Enrich single post asynchronously
+tasks.enrich_post.delay(post_id=123)
+
+# Batch enrich new posts
+tasks.enrich_new_posts.delay(limit=100)
+
+# Enrich posts from specific channel
+tasks.enrich_channel_posts.delay(channel_id="uuid", limit=50)
+```
+
+### Key Concepts
+
+1. **Explicit Keywords:** Words/phrases directly present in the text
+2. **Implicit Keywords:** Related concepts NOT in the text (key innovation for RAG-like retrieval)
+3. **Rate Limiting:** Built into GroqClient (default 30 RPM for free tier)
+4. **Cost Tracking:** All LLM calls logged to `llm_usage_logs` table
+
+### Prompt Template Guidelines
+
+When creating new prompts:
+- Use JSON mode (`complete_json()`) for structured extraction
+- Keep temperature low (0.1) for consistent extraction
+- Include explicit instructions for JSON structure
+- Handle edge cases (empty text, media-only posts)
+
+### Error Handling
+
+```python
+from src.tnse.llm import (
+    GroqAuthenticationError,  # API key issues
+    GroqRateLimitError,       # Rate limit exceeded
+    GroqTimeoutError,         # Request timeout
+    JSONParseError,           # Invalid JSON response
+)
+
+try:
+    result = await client.complete_json(prompt)
+except GroqRateLimitError:
+    # Handle rate limit - Celery tasks retry automatically
+except JSONParseError:
+    # Handle malformed JSON response
+```
+
 ## Git Workflow
 
 - Use conventional commit messages: `type: description`
