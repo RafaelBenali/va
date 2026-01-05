@@ -275,14 +275,15 @@ class TestDailyStats:
 
         mock_session = AsyncMock()
 
-        # Mock query result
+        # Mock query result - use namedtuple-like mock with proper attributes
+        mock_row = MagicMock()
+        mock_row.total_tokens = 10000
+        mock_row.total_cost = Decimal("0.005")
+        mock_row.posts_processed = 50
+        mock_row.call_count = 50
+
         mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = MagicMock(
-            total_tokens=10000,
-            total_cost=Decimal("0.005"),
-            posts_processed=50,
-            call_count=50,
-        )
+        mock_result.one_or_none.return_value = mock_row
         mock_session.execute = AsyncMock(return_value=mock_result)
 
         tracker = CostTracker()
@@ -302,7 +303,7 @@ class TestDailyStats:
 
         mock_session = AsyncMock()
         mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = None
+        mock_result.one_or_none.return_value = None
         mock_session.execute = AsyncMock(return_value=mock_result)
 
         tracker = CostTracker()
@@ -321,7 +322,7 @@ class TestDailyStats:
 
         mock_session = AsyncMock()
         mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = None
+        mock_result.one_or_none.return_value = None
         mock_session.execute = AsyncMock(return_value=mock_result)
 
         tracker = CostTracker()
@@ -342,13 +343,15 @@ class TestMonthlyStats:
         from src.tnse.llm.cost_tracker import CostTracker, MonthlyStats
 
         mock_session = AsyncMock()
+
+        mock_row = MagicMock()
+        mock_row.total_tokens = 500000
+        mock_row.total_cost = Decimal("0.25")
+        mock_row.posts_processed = 2500
+        mock_row.call_count = 2500
+
         mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = MagicMock(
-            total_tokens=500000,
-            total_cost=Decimal("0.25"),
-            posts_processed=2500,
-            call_count=2500,
-        )
+        mock_result.one_or_none.return_value = mock_row
         mock_session.execute = AsyncMock(return_value=mock_result)
 
         tracker = CostTracker()
@@ -369,7 +372,7 @@ class TestMonthlyStats:
 
         mock_session = AsyncMock()
         mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = None
+        mock_result.one_or_none.return_value = None
         mock_session.execute = AsyncMock(return_value=mock_result)
 
         tracker = CostTracker()
@@ -392,13 +395,15 @@ class TestWeeklyStats:
         from src.tnse.llm.cost_tracker import CostTracker, WeeklyStats
 
         mock_session = AsyncMock()
+
+        mock_row = MagicMock()
+        mock_row.total_tokens = 70000
+        mock_row.total_cost = Decimal("0.035")
+        mock_row.posts_processed = 350
+        mock_row.call_count = 350
+
         mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = MagicMock(
-            total_tokens=70000,
-            total_cost=Decimal("0.035"),
-            posts_processed=350,
-            call_count=350,
-        )
+        mock_result.one_or_none.return_value = mock_row
         mock_session.execute = AsyncMock(return_value=mock_result)
 
         tracker = CostTracker()
@@ -422,10 +427,16 @@ class TestCostAlerts:
         from src.tnse.llm.cost_tracker import CostTracker, CostStatus
 
         mock_session = AsyncMock()
+
+        # Mock the query result for get_daily_stats
+        mock_row = MagicMock()
+        mock_row.total_tokens = 10000
+        mock_row.total_cost = Decimal("1.00")
+        mock_row.posts_processed = 50
+        mock_row.call_count = 50
+
         mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = MagicMock(
-            total_cost=Decimal("1.00"),
-        )
+        mock_result.one_or_none.return_value = mock_row
         mock_session.execute = AsyncMock(return_value=mock_result)
 
         tracker = CostTracker(daily_cost_limit_usd=Decimal("10.00"))
@@ -442,10 +453,15 @@ class TestCostAlerts:
         from src.tnse.llm.cost_tracker import CostTracker
 
         mock_session = AsyncMock()
+
+        mock_row = MagicMock()
+        mock_row.total_tokens = 85000
+        mock_row.total_cost = Decimal("8.50")  # 85% of 10.00
+        mock_row.posts_processed = 425
+        mock_row.call_count = 425
+
         mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = MagicMock(
-            total_cost=Decimal("8.50"),  # 85% of 10.00
-        )
+        mock_result.one_or_none.return_value = mock_row
         mock_session.execute = AsyncMock(return_value=mock_result)
 
         tracker = CostTracker(daily_cost_limit_usd=Decimal("10.00"))
@@ -460,10 +476,15 @@ class TestCostAlerts:
         from src.tnse.llm.cost_tracker import CostTracker
 
         mock_session = AsyncMock()
+
+        mock_row = MagicMock()
+        mock_row.total_tokens = 120000
+        mock_row.total_cost = Decimal("12.00")  # Over 10.00 limit
+        mock_row.posts_processed = 600
+        mock_row.call_count = 600
+
         mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = MagicMock(
-            total_cost=Decimal("12.00"),  # Over 10.00 limit
-        )
+        mock_result.one_or_none.return_value = mock_row
         mock_session.execute = AsyncMock(return_value=mock_result)
 
         tracker = CostTracker(daily_cost_limit_usd=Decimal("10.00"))

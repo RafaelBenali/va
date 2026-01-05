@@ -1,5 +1,5 @@
 """
-LLM Integration Module (WS-5.1, WS-5.3, WS-5.4)
+LLM Integration Module (WS-5.1, WS-5.3, WS-5.4, WS-5.7)
 
 Provides LLM client integrations for post enrichment.
 Currently supports Groq as the primary provider.
@@ -18,6 +18,13 @@ Usage:
     # For Celery tasks (WS-5.4):
     from src.tnse.llm import tasks
     tasks.enrich_post.delay(post_id=123)
+
+    # For cost tracking (WS-5.7):
+    from src.tnse.llm import CostTracker
+    tracker = CostTracker()
+    await tracker.log_usage(session, model="qwen-qwq-32b",
+                            prompt_tokens=1000, completion_tokens=500,
+                            task_name="enrich_post", posts_processed=1)
 """
 
 from src.tnse.llm.base import CompletionResult, LLMProvider
@@ -38,6 +45,18 @@ from src.tnse.llm.enrichment_service import (
 )
 # Import tasks module for easy access
 from src.tnse.llm import tasks
+# Import cost tracking module (WS-5.7)
+from src.tnse.llm import cost_tracker
+from src.tnse.llm.cost_tracker import (
+    CostTracker,
+    CostStatus,
+    DailyStats,
+    WeeklyStats,
+    MonthlyStats,
+    GROQ_PRICING,
+    estimate_cost,
+    format_llm_stats,
+)
 
 __all__ = [
     # Base classes
@@ -53,6 +72,16 @@ __all__ = [
     "ENRICHMENT_PROMPT",
     # Celery tasks (WS-5.4)
     "tasks",
+    # Cost tracking (WS-5.7)
+    "cost_tracker",
+    "CostTracker",
+    "CostStatus",
+    "DailyStats",
+    "WeeklyStats",
+    "MonthlyStats",
+    "GROQ_PRICING",
+    "estimate_cost",
+    "format_llm_stats",
     # Exceptions
     "GroqConfigurationError",
     "GroqAuthenticationError",
