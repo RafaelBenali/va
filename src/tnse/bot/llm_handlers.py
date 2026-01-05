@@ -266,6 +266,7 @@ async def stats_llm_command(
     """Handle the /stats llm command.
 
     Shows LLM usage statistics including token counts and costs.
+    Uses CostTracker from WS-5.7 for accurate cost tracking.
 
     Usage:
         /stats llm - Show LLM usage statistics
@@ -296,55 +297,21 @@ async def stats_llm_command(
         return
 
     try:
-        # Query database for usage stats
-        from sqlalchemy import text, func
-        from datetime import datetime, timezone, timedelta
+        # Use CostTracker for stats (WS-5.7)
+        from sqlalchemy import text
+        from src.tnse.llm.cost_tracker import CostTracker, format_llm_stats
+
+        tracker = CostTracker()
 
         async with db_session_factory() as session:
-            # Get total token usage from llm_usage_logs table
-            today = datetime.now(timezone.utc).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-            week_ago = today - timedelta(days=7)
-            month_ago = today - timedelta(days=30)
-
-            # Try to query usage logs
             try:
-                result = await session.execute(
-                    text("""
-                        SELECT
-                            COUNT(*) as total_calls,
-                            COALESCE(SUM(total_tokens), 0) as total_tokens,
-                            COALESCE(SUM(estimated_cost_usd), 0) as total_cost,
-                            COALESCE(SUM(posts_processed), 0) as total_posts
-                        FROM llm_usage_logs
-                        WHERE created_at >= :month_ago
-                    """),
-                    {"month_ago": month_ago}
-                )
-                row = result.fetchone()
+                # Get stats using CostTracker
+                daily_stats = await tracker.get_daily_stats(session)
+                weekly_stats = await tracker.get_weekly_stats(session)
+                monthly_stats = await tracker.get_monthly_stats(session)
 
-                total_calls = row.total_calls if row else 0
-                total_tokens = row.total_tokens if row else 0
-                total_cost = row.total_cost if row else 0.0
-                total_posts = row.total_posts if row else 0
-
-                # Get today's stats
-                today_result = await session.execute(
-                    text("""
-                        SELECT
-                            COUNT(*) as calls,
-                            COALESCE(SUM(total_tokens), 0) as tokens,
-                            COALESCE(SUM(estimated_cost_usd), 0) as cost
-                        FROM llm_usage_logs
-                        WHERE created_at >= :today
-                    """),
-                    {"today": today}
-                )
-                today_row = today_result.fetchone()
-                today_calls = today_row.calls if today_row else 0
-                today_tokens = today_row.tokens if today_row else 0
-                today_cost = today_row.cost if today_row else 0.0
+                # Check daily cost limit status
+                cost_status = await tracker.check_daily_limit(session)
 
                 # Get enriched posts count
                 enriched_result = await session.execute(
@@ -352,24 +319,27 @@ async def stats_llm_command(
                 )
                 enriched_count = enriched_result.scalar() or 0
 
+                # Format the stats message
+                stats_message = format_llm_stats(daily_stats, weekly_stats, monthly_stats)
+
+                # Add cost limit status
+                status_indicator = ""
+                if cost_status.status == "exceeded":
+                    status_indicator = "\n\n[!] Daily cost limit EXCEEDED"
+                elif cost_status.status == "warning":
+                    status_indicator = f"\n\n[!] Approaching daily limit ({cost_status.percentage_used}%)"
+
                 message = (
-                    "LLM Usage Statistics\n"
-                    "--------------------\n\n"
                     f"Current mode: {current_mode}\n\n"
-                    f"Today:\n"
-                    f"  - API calls: {today_calls}\n"
-                    f"  - Tokens used: {today_tokens:,}\n"
-                    f"  - Estimated cost: ${today_cost:.4f}\n\n"
-                    f"Last 30 days:\n"
-                    f"  - API calls: {total_calls}\n"
-                    f"  - Tokens used: {total_tokens:,}\n"
-                    f"  - Estimated cost: ${total_cost:.4f}\n"
-                    f"  - Posts processed: {total_posts}\n\n"
+                    f"{stats_message}\n\n"
                     f"Total enriched posts: {enriched_count}"
+                    f"{status_indicator}\n\n"
+                    f"Daily limit: ${cost_status.limit:.2f} "
+                    f"(used: ${cost_status.current_cost:.4f})"
                 )
 
             except Exception as db_error:
-                # Table may not exist yet
+                # Table may not exist yet or other DB error
                 logger.warning(
                     "Could not query LLM usage logs",
                     error=str(db_error),
