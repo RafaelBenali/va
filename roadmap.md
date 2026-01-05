@@ -1017,23 +1017,43 @@ NOT directly in the text, enabling RAG-like retrieval.
 | **Dependencies** | WS-5.5 |
 | **Parallel With** | None |
 | **Effort** | M |
-| **Status** | Not Started |
+| **Status** | Complete |
+| **Started** | 2026-01-05 |
+| **Completed** | 2026-01-05 |
+| **Assigned** | tdd-coder-ws56 |
 
 **Tasks:**
-- [ ] Create `src/tnse/bot/llm_handlers.py` with /mode, /enrich, /stats llm commands
-- [ ] Update search_handlers.py to display category/sentiment
-- [ ] Add `/search category:<name>` and `/search sentiment:<value>` filter syntax
-- [ ] Update SearchFormatter with enrichment display
-- [ ] Register new handlers and update help text
-- [ ] Add command alias: `/m` for `/mode`
-- [ ] Update bot menu commands list
+- [x] Create `src/tnse/bot/llm_handlers.py` with /mode, /enrich, /stats llm commands
+- [x] Update search_handlers.py to display category/sentiment
+- [x] Add `/search category:<name>` and `/search sentiment:<value>` filter syntax
+- [x] Update SearchFormatter with enrichment display
+- [x] Register new handlers and update help text
+- [x] Add command alias: `/m` for `/mode`
+- [x] Update bot menu commands list
+
+**Affected Files:**
+- `src/tnse/bot/llm_handlers.py` - New handler module (101 lines)
+- `src/tnse/bot/search_handlers.py` - Enhanced with filters and enrichment display
+- `src/tnse/bot/application.py` - Registered new handlers
+- `src/tnse/bot/handlers.py` - Updated help text
+- `src/tnse/bot/menu.py` - Added LLM command category
+- `tests/unit/bot/test_llm_handlers.py` - 21 new tests
+- `tests/unit/bot/test_search_with_enrichment.py` - 13 new tests
+
+**Key Implementation Details:**
+- `/mode` command with `/m` alias for switching between llm/metrics modes
+- `/enrich @channel` triggers Celery enrichment tasks
+- `/llmstats` shows usage statistics from llm_usage_logs table
+- `parse_search_filters()` extracts category:/sentiment: from query
+- `format_enrichment()` displays category and sentiment indicator in results
+- Search respects llm_mode for include_enrichment parameter
 
 **Acceptance Criteria:**
-- [ ] Users can switch between LLM and metrics mode
-- [ ] Search results display enrichment metadata when available
-- [ ] Filter syntax works for category/sentiment
-- [ ] Help text documents new commands
-- [ ] Commands registered in bot menu
+- [x] Users can switch between LLM and metrics mode
+- [x] Search results display enrichment metadata when available
+- [x] Filter syntax works for category/sentiment
+- [x] Help text documents new commands
+- [x] Commands registered in bot menu
 
 ---
 

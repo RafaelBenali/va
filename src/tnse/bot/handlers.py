@@ -168,6 +168,8 @@ Channel Management:
 Search Commands:
 /search (/s) <query> - Search for news by keyword
   Example: /search corruption scandal
+  Filters: category:politics, sentiment:negative
+  Example: /search news category:economics
 /export (/e) [csv|json] - Export search results to file
   Example: /export json
 
@@ -180,9 +182,16 @@ Topic Management:
 /templates - Show pre-built topic templates
 /usetemplate <name> - Run a pre-built template search
 
+LLM Features:
+/mode (/m) - Show/switch between LLM and metrics modes
+  Example: /mode llm (enable enriched search)
+/enrich @channel - Trigger LLM enrichment for a channel
+/llmstats - Show LLM usage statistics and costs
+
 Advanced:
 /import - Bulk import channels from file (CSV, JSON, TXT)
 /health - Show health status of all channels
+/sync - Trigger content sync for monitored channels
 
 For more information, visit the documentation or contact the bot administrator."""
 

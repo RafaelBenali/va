@@ -29,6 +29,11 @@ from src.tnse.bot.handlers import (
     settings_command,
     start_command,
 )
+from src.tnse.bot.llm_handlers import (
+    mode_command,
+    enrich_command,
+    stats_llm_command,
+)
 from src.tnse.bot.search_handlers import (
     pagination_callback,
     search_command,
@@ -154,6 +159,12 @@ def create_bot_application(
 
     # Sync command (WS-9.2) - triggers manual content collection
     application.add_handler(CommandHandler("sync", require_access(sync_command)))
+
+    # LLM commands (WS-5.6) - mode switching and enrichment
+    # /mode with /m alias for quick access
+    application.add_handler(CommandHandler(["mode", "m"], require_access(mode_command)))
+    application.add_handler(CommandHandler("enrich", require_access(enrich_command)))
+    application.add_handler(CommandHandler("llmstats", require_access(stats_llm_command)))
 
     # Callback query handlers for pagination
     application.add_handler(

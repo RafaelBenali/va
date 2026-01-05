@@ -3,9 +3,12 @@ TNSE Telegram Bot Search Command Handlers
 
 Provides command handlers for search operations.
 Work Stream: WS-2.4 - Search Bot Commands
+Work Stream: WS-5.6 - Bot Integration (LLM features)
 
 Commands:
 - /search <query> - Search for news by keyword
+- /search <query> category:<name> - Filter by category
+- /search <query> sentiment:<value> - Filter by sentiment
 
 Requirements addressed:
 - /search returns ranked results
@@ -13,6 +16,8 @@ Requirements addressed:
 - Metrics displayed clearly
 - Links work
 - Telegram message length limits (4096 chars)
+- Category/sentiment displayed when available (WS-5.6)
+- Filter syntax for category/sentiment (WS-5.6)
 
 Python 3.10+ Modernization (WS-6.8):
 - Uses X | None instead of Optional[X] for union types
@@ -61,6 +66,66 @@ EMOJI_DISPLAY_MAP = {
 
 # Callback data prefix for search pagination
 SEARCH_CALLBACK_PREFIX = "search:"
+
+# Valid category values for filtering
+VALID_CATEGORIES = frozenset([
+    "politics", "economics", "technology", "sports",
+    "entertainment", "health", "military", "crime", "society", "other"
+])
+
+# Valid sentiment values for filtering
+VALID_SENTIMENTS = frozenset(["positive", "negative", "neutral"])
+
+
+def parse_search_filters(query: str) -> tuple[str, dict[str, str]]:
+    """Parse search query for filter syntax (category:, sentiment:).
+
+    Extracts filter directives from the query and returns the cleaned
+    query along with extracted filters.
+
+    Args:
+        query: The full search query string.
+
+    Returns:
+        Tuple of (cleaned_query, filters_dict).
+        filters_dict may contain 'category' and/or 'sentiment' keys.
+
+    Examples:
+        >>> parse_search_filters("corruption category:politics")
+        ("corruption", {"category": "politics"})
+
+        >>> parse_search_filters("news sentiment:negative")
+        ("news", {"sentiment": "negative"})
+    """
+    if not query:
+        return "", {}
+
+    filters: dict[str, str] = {}
+    cleaned_parts = []
+
+    # Split by whitespace and process each token
+    tokens = query.split()
+
+    for token in tokens:
+        # Check for category filter
+        if token.lower().startswith("category:"):
+            category_value = token[9:].lower()
+            if category_value in VALID_CATEGORIES:
+                filters["category"] = category_value
+            continue
+
+        # Check for sentiment filter
+        if token.lower().startswith("sentiment:"):
+            sentiment_value = token[10:].lower()
+            if sentiment_value in VALID_SENTIMENTS:
+                filters["sentiment"] = sentiment_value
+            continue
+
+        # Not a filter, keep in query
+        cleaned_parts.append(token)
+
+    cleaned_query = " ".join(cleaned_parts)
+    return cleaned_query, filters
 
 
 @dataclass
@@ -186,6 +251,52 @@ class SearchFormatter:
 
         return text_content[: self.max_preview_length - 3] + "..."
 
+    def format_enrichment(self, result: SearchResult) -> str | None:
+        """Format enrichment data (category/sentiment) for display.
+
+        Args:
+            result: The SearchResult with optional enrichment.
+
+        Returns:
+            Formatted enrichment string or None if not enriched.
+        """
+        # Check if result has enrichment data
+        # Handle MagicMock objects gracefully by checking actual attribute values
+        try:
+            is_enriched = result.is_enriched
+            # If is_enriched is a MagicMock, check actual values instead
+            if not isinstance(is_enriched, bool):
+                # Fall back to checking actual values
+                is_enriched = (
+                    (hasattr(result, 'category') and isinstance(result.category, str) and result.category)
+                    or (hasattr(result, 'sentiment') and isinstance(result.sentiment, str) and result.sentiment)
+                )
+            if not is_enriched:
+                return None
+        except (AttributeError, TypeError):
+            return None
+
+        parts = []
+
+        # Get category value, ensuring it's a string
+        category = getattr(result, 'category', None)
+        if isinstance(category, str) and category and category != "other":
+            parts.append(category.capitalize())
+
+        # Get sentiment value, ensuring it's a string
+        sentiment = getattr(result, 'sentiment', None)
+        if isinstance(sentiment, str) and sentiment and sentiment != "neutral":
+            # Use simple indicator for sentiment
+            if sentiment == "positive":
+                parts.append("+")
+            elif sentiment == "negative":
+                parts.append("-")
+
+        if not parts:
+            return None
+
+        return " | ".join(parts)
+
     def format_result(
         self,
         result: SearchResult,
@@ -211,7 +322,13 @@ class SearchFormatter:
 
         # Header line: index, channel name, views
         view_display = self.format_view_count(result.view_count)
-        lines.append(f"{index}. [{result.channel_title}] - {view_display} views")
+
+        # Include enrichment indicator in header if available
+        enrichment_display = self.format_enrichment(result)
+        if enrichment_display:
+            lines.append(f"{index}. [{result.channel_title}] - {view_display} views [{enrichment_display}]")
+        else:
+            lines.append(f"{index}. [{result.channel_title}] - {view_display} views")
 
         # Preview line
         preview = self.format_preview(result.text_content)
@@ -349,7 +466,13 @@ async def search_command(
     """Handle the /search command.
 
     Searches for posts matching the query and displays results
-    with pagination.
+    with pagination. Supports filter syntax for category and sentiment.
+
+    Usage:
+        /search <query>
+        /search <query> category:politics
+        /search <query> sentiment:negative
+        /search <query> category:economics sentiment:positive
 
     Args:
         update: The Telegram update object.
@@ -362,18 +485,36 @@ async def search_command(
     if not context.args:
         await update.message.reply_text(
             "Usage: /search <query>\n\n"
-            "Example: /search corruption news"
+            "Examples:\n"
+            "  /search corruption news\n"
+            "  /search politics category:politics\n"
+            "  /search scandal sentiment:negative\n\n"
+            "Filters:\n"
+            "  category:politics|economics|technology|etc.\n"
+            "  sentiment:positive|negative|neutral"
         )
         logger.info("search called without arguments", user_id=user_id)
         return
 
     # Combine all arguments into search query
-    query = " ".join(context.args)
+    raw_query = " ".join(context.args)
+
+    # Parse filters from query (WS-5.6)
+    query, filters = parse_search_filters(raw_query)
+
+    # Check if we have any actual search terms left after filter extraction
+    if not query.strip():
+        await update.message.reply_text(
+            "Please provide search terms.\n\n"
+            "Usage: /search <query> [category:...] [sentiment:...]"
+        )
+        return
 
     logger.info(
         "Searching",
         user_id=user_id,
         query=query,
+        filters=filters,
     )
 
     # Send typing indicator to show progress
@@ -396,13 +537,20 @@ async def search_command(
         )
         return
 
+    # Determine if enrichment should be included based on mode (WS-5.6)
+    llm_mode = context.bot_data.get("llm_mode", "metrics")
+    include_enrichment = llm_mode == "llm"
+
     try:
-        # Execute search
+        # Execute search with filters
         results = await search_service.search(
             query=query,
             hours=24,
             limit=100,  # Get more results for pagination
             offset=0,
+            category=filters.get("category"),
+            sentiment=filters.get("sentiment"),
+            include_enrichment=include_enrichment,
         )
 
         if not results:

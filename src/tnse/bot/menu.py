@@ -31,7 +31,7 @@ COMMAND_CATEGORIES: dict[str, list[dict[str, str]]] = {
         {"command": "channelinfo", "description": "Show channel details and health"},
     ],
     "Search": [
-        {"command": "search", "description": "Search for news by keyword"},
+        {"command": "search", "description": "Search with filters (category:, sentiment:)"},
     ],
     "Topic": [
         {"command": "savetopic", "description": "Save current search configuration"},
@@ -43,6 +43,11 @@ COMMAND_CATEGORIES: dict[str, list[dict[str, str]]] = {
     ],
     "Export": [
         {"command": "export", "description": "Export search results to file"},
+    ],
+    "LLM": [
+        {"command": "mode", "description": "Show/switch LLM/metrics mode"},
+        {"command": "enrich", "description": "Trigger LLM enrichment for a channel"},
+        {"command": "llmstats", "description": "Show LLM usage statistics"},
     ],
     "Advanced": [
         {"command": "import", "description": "Bulk import channels from file"},
