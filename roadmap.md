@@ -2110,8 +2110,8 @@ Currently re-fetches same messages each collection cycle because there's no trac
 | WS-5.3 | Enrichment Service Core | WS-5.1, WS-5.2 | M | Complete |
 | WS-5.4 | Celery Enrichment Tasks | WS-5.3, WS-8.1 | M | Complete |
 | WS-5.5 | Enhanced Search Service | WS-5.2, WS-5.4 | M | Complete |
-| WS-5.6 | Bot Integration (LLM) | WS-5.5 | M | Not Started |
-| WS-5.7 | Cost Tracking & Monitoring | WS-5.4, WS-5.6 | S | Not Started |
+| WS-5.6 | Bot Integration (LLM) | WS-5.5 | M | Complete |
+| WS-5.7 | Cost Tracking & Monitoring | WS-5.4, WS-5.6 | S | Complete |
 | WS-5.8 | Documentation & Testing (LLM) | WS-5.1-5.7 | S | Complete |
 | WS-6.1 | Dependency Modernization | WS-4.3 | M | Complete |
 | WS-6.2 | Security Audit | WS-4.3 | M | Complete |
