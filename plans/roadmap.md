@@ -8,6 +8,8 @@
 | WS-5.2 | Database Schema (Post Enrichment) | Complete | HIGH |
 | WS-5.3 | Enrichment Service Core | Complete | HIGH |
 | WS-5.4 | Celery Enrichment Tasks | Complete | HIGH |
+| WS-5.5 | Enhanced Search Service | Complete | HIGH |
+| WS-5.7 | Cost Tracking & Monitoring | Complete | HIGH |
 | WS-7.1 | Bot Service Dependency Injection Bug Fix | Complete | HIGH |
 | WS-7.2 | TelethonClient Auto-Connect Bug Fix | Complete | HIGH |
 | WS-7.3 | Search Service Injection Bug Fix | Complete | HIGH |
@@ -406,6 +408,36 @@ The fix uses `async with db_session_factory() as session:` to ensure automatic c
 ---
 
 See `docs/WS-5-TASK-BREAKDOWN.md` for complete task breakdown of WS-5.1 through WS-5.8.
+
+---
+
+### Phase 5.7: Cost Tracking & Monitoring
+- **Status:** Complete
+- **Started:** 2026-01-05
+- **Completed:** 2026-01-05
+- **Priority:** HIGH
+- **Assigned:** tdd-coder-ws57
+- **Tasks:**
+  - [x] Create `src/tnse/llm/cost_tracker.py` with usage logging
+  - [x] Configure Groq pricing constants (7 models + default)
+  - [x] Persist usage to `llm_usage_logs` table
+  - [x] Implement `/stats llm` command output (tokens, cost, posts enriched)
+  - [x] Add alert threshold configuration (`LLM_DAILY_COST_LIMIT_USD`)
+  - [x] Create unit tests for cost calculations (35 tests)
+- **Effort:** S
+- **Done When:**
+  - All LLM calls logged with token counts
+  - Cost estimates accurate to pricing
+  - `/stats llm` shows useful information
+  - Warning logged when approaching cost limit
+  - Historical data queryable
+
+**Affected Files:**
+- `src/tnse/llm/cost_tracker.py` - CostTracker, DailyStats, WeeklyStats, MonthlyStats
+- `src/tnse/llm/__init__.py` - Updated exports
+- `src/tnse/bot/llm_handlers.py` - Updated /stats llm to use CostTracker
+- `tests/unit/llm/test_cost_tracker.py` - 35 comprehensive tests
+- `.env.example` - Added LLM_DAILY_COST_LIMIT_USD configuration
 
 ---
 

@@ -209,19 +209,40 @@ WS-5.8: Documentation & Testing
 | **Effort** | M |
 | **Status** | Not Started |
 
+### Celery Beat Infrastructure Note
+
+**Celery Beat is already configured and operational** in `src/tnse/core/celery_app.py`:
+- Schedule file location: `/tmp/celerybeat-schedule` (writable in Docker containers)
+- Existing schedule: `collect-content-every-15-minutes` task running every 15 minutes
+- Configuration pattern established for adding new scheduled tasks
+
+New enrichment tasks should follow the existing pattern in `celery_app.conf.beat_schedule`.
+
 ### Tasks
 
 - [ ] Create `src/tnse/llm/tasks.py`:
   - `enrich_post(post_id: str)` - Enrich single post
   - `enrich_new_posts()` - Find and enrich posts without enrichment
   - `enrich_channel_posts(channel_id: str)` - Enrich all posts from channel
+- [ ] Register tasks in `src/tnse/core/celery_app.py`:
+  - Add `"src.tnse.llm.tasks"` to `imports` and `include` lists
 - [ ] Add rate limiting to tasks (10 requests/minute default)
 - [ ] Implement retry logic with exponential backoff
 - [ ] Add metrics logging (posts processed, tokens used, time taken)
 - [ ] Wire tasks to ContentCollector pipeline:
   - Option A: Trigger enrichment after content storage (sync)
   - Option B: Queue for later processing (async, recommended)
-- [ ] Add Celery beat schedule for `enrich_new_posts` (every 5 min)
+- [ ] Add Celery Beat schedule entry for `enrich_new_posts` (every 5 min):
+  ```python
+  # Add to celery_app.conf.beat_schedule in src/tnse/core/celery_app.py
+  "enrich-new-posts-every-5-minutes": {
+      "task": "src.tnse.llm.tasks.enrich_new_posts",
+      "schedule": 300.0,  # 5 minutes
+      "options": {
+          "expires": 240.0,  # Expire if not started within 4 minutes
+      },
+  },
+  ```
 - [ ] Store enrichment results in database via `ContentStorage`
 - [ ] Create unit tests for tasks
 - [ ] Create integration test for full enrichment workflow
@@ -355,42 +376,51 @@ WS-5.8: Documentation & Testing
 | **Description** | Track token usage, estimate costs, provide visibility |
 | **Dependencies** | WS-5.4, WS-5.6 |
 | **Effort** | S |
-| **Status** | Not Started |
+| **Status** | Complete |
+| **Started** | 2026-01-05 |
+| **Completed** | 2026-01-05 |
+| **Assigned** | tdd-coder-ws57 |
 
 ### Tasks
 
-- [ ] Create `src/tnse/llm/cost_tracker.py`:
+- [x] Create `src/tnse/llm/cost_tracker.py`:
   - `log_usage(model, prompt_tokens, completion_tokens, task_name)` method
   - `estimate_cost(model, prompt_tokens, completion_tokens)` method
   - `get_daily_stats()` method
   - `get_monthly_stats()` method
-- [ ] Configure Groq pricing constants (update as needed)
-- [ ] Persist usage to `llm_usage_logs` table
-- [ ] Implement `/stats llm` command output:
+  - `get_weekly_stats()` method
+  - `check_daily_limit()` method - returns status: ok/warning/exceeded
+- [x] Configure Groq pricing constants (7 models + default)
+- [x] Persist usage to `llm_usage_logs` table
+- [x] Implement `/stats llm` command output:
   - Total tokens used (today, this week, this month)
   - Estimated cost (USD)
   - Posts enriched count
   - Average tokens per post
-- [ ] Add structured logging for cost events
-- [ ] Create alert threshold configuration:
+  - Daily limit status (ok/warning/exceeded)
+- [x] Add structured logging for cost events
+- [x] Create alert threshold configuration:
   - `LLM_DAILY_COST_LIMIT_USD` (default: 10.00)
-  - Log warning when approaching limit
-- [ ] Create unit tests for cost calculations
-- [ ] Add dashboard-ready metrics (optional: Prometheus/Grafana)
+  - Log warning when approaching limit (80%)
+  - Log error when limit exceeded (100%)
+- [x] Create unit tests for cost calculations (35 tests)
+- [ ] Add dashboard-ready metrics (optional: Prometheus/Grafana) - Deferred to future work
 
 ### Acceptance Criteria
 
-- [ ] All LLM calls logged with token counts
-- [ ] Cost estimates accurate to pricing
-- [ ] `/stats llm` shows useful information
-- [ ] Warning logged when approaching cost limit
-- [ ] Historical data queryable
+- [x] All LLM calls logged with token counts
+- [x] Cost estimates accurate to pricing
+- [x] `/stats llm` shows useful information
+- [x] Warning logged when approaching cost limit
+- [x] Historical data queryable
 
 ### Deliverables
 
-- `src/tnse/llm/cost_tracker.py`
-- Updated `src/tnse/llm/tasks.py` (integration)
-- `tests/unit/llm/test_cost_tracker.py`
+- `src/tnse/llm/cost_tracker.py` - CostTracker, DailyStats, WeeklyStats, MonthlyStats, CostStatus
+- `src/tnse/llm/__init__.py` - Updated exports
+- `src/tnse/bot/llm_handlers.py` - Updated /stats llm command to use CostTracker
+- `tests/unit/llm/test_cost_tracker.py` - 35 comprehensive unit tests
+- `.env.example` - Added LLM_DAILY_COST_LIMIT_USD configuration
 
 ---
 
