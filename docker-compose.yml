@@ -18,6 +18,10 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-tnse}
       POSTGRES_USER: ${POSTGRES_USER:-tnse_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tnse_dev_password}
+      # Russian locale and text search configuration
+      POSTGRES_INITDB_ARGS: "--locale=ru_RU.UTF-8 --encoding=UTF8"
+      LANG: ru_RU.UTF-8
+      LC_ALL: ru_RU.UTF-8
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
@@ -60,17 +64,12 @@ services:
       dockerfile: Dockerfile
     container_name: tnse_app
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      - APP_ENV=development
-      - DEBUG=true
-      - LOG_LEVEL=DEBUG
+      # Override host-specific values for Docker networking
       - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-tnse}
-      - POSTGRES_USER=${POSTGRES_USER:-tnse_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-tnse_dev_password}
       - REDIS_HOST=redis
-      - REDIS_PORT=6379
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
     ports:
@@ -98,20 +97,18 @@ services:
     container_name: tnse_celery_worker
     command: celery -A src.tnse.core.celery_app worker --loglevel=info
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      - APP_ENV=development
-      - LOG_LEVEL=INFO
+      # Override host-specific values for Docker networking
       - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-tnse}
-      - POSTGRES_USER=${POSTGRES_USER:-tnse_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-tnse_dev_password}
       - REDIS_HOST=redis
-      - REDIS_PORT=6379
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
     volumes:
       - ./src:/app/src:ro
+      # Mount Telethon session file for Telegram API access
+      - ./tnse_session.session:/app/tnse_session.session:rw
     depends_on:
       postgres:
         condition: service_healthy
@@ -130,13 +127,13 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: tnse_celery_beat
-    command: celery -A src.tnse.core.celery_app beat --loglevel=info
+    command: celery -A src.tnse.core.celery_app beat --loglevel=info --schedule=/tmp/celerybeat-schedule
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      - APP_ENV=development
-      - LOG_LEVEL=INFO
+      # Override host-specific values for Docker networking
       - REDIS_HOST=redis
-      - REDIS_PORT=6379
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
     volumes:

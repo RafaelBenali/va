@@ -16,6 +16,7 @@ structlog>=24.4.0
 
 # Database
 psycopg2-binary>=2.9.10
+asyncpg>=0.30.0
 sqlalchemy>=2.0.35
 alembic>=1.14.0
 
@@ -33,3 +34,6 @@ groq>=0.13.0
 # Version 21.9+ supports Bot API 8.x, version 22.x adds Bot API 9.x support
 # Note: Version 22.0 removed v20.x deprecations - ensure handlers use current patterns
 python-telegram-bot[ext]>=21.9
+
+# Telegram MTProto Client (for channel content collection)
+telethon>=1.42.0

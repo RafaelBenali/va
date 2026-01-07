@@ -34,7 +34,13 @@ class DatabaseSettings(BaseSettings):
     DATABASE_URL takes precedence when set.
     """
 
-    model_config = SettingsConfigDict(env_prefix="POSTGRES_", extra="ignore", populate_by_name=True)
+    model_config = SettingsConfigDict(
+        env_prefix="POSTGRES_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        populate_by_name=True,
+    )
 
     host: str = Field(default="localhost", description="Database host")
     port: int = Field(default=5432, description="Database port")
@@ -94,7 +100,12 @@ class RedisSettings(BaseSettings):
     Supports both redis:// and rediss:// (TLS) schemes.
     """
 
-    model_config = SettingsConfigDict(env_prefix="REDIS_")
+    model_config = SettingsConfigDict(
+        env_prefix="REDIS_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     host: str = Field(default="localhost", description="Redis host")
     port: int = Field(default=6379, description="Redis port")
@@ -151,7 +162,12 @@ class RedisSettings(BaseSettings):
 class CelerySettings(BaseSettings):
     """Celery task queue configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="CELERY_")
+    model_config = SettingsConfigDict(
+        env_prefix="CELERY_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     broker_url: str = Field(
         default="redis://localhost:6379/1", description="Celery broker URL"
@@ -193,11 +209,16 @@ class GroqSettings(BaseSettings):
     Free tier: 30 RPM (requests per minute).
     """
 
-    model_config = SettingsConfigDict(env_prefix="GROQ_")
+    model_config = SettingsConfigDict(
+        env_prefix="GROQ_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     api_key: str | None = Field(default=None, description="Groq API key")
     model: str = Field(default="qwen-qwq-32b", description="Groq model ID")
-    max_tokens: int = Field(default=1024, description="Max tokens for response")
+    max_tokens: int = Field(default=2048, description="Max tokens for response")
     temperature: float = Field(default=0.1, description="Temperature for generation")
     enabled: bool = Field(default=False, description="Enable Groq LLM features")
     rate_limit_rpm: int = Field(default=30, description="Rate limit in requests per minute")
@@ -207,6 +228,12 @@ class GroqSettings(BaseSettings):
 
 class LLMSettings(BaseSettings):
     """LLM API configuration."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     enabled: bool = Field(default=False, alias="LLM_ENABLED", description="Enable LLM mode")
     provider: str = Field(
@@ -231,7 +258,12 @@ class LLMSettings(BaseSettings):
 class ReactionWeightSettings(BaseSettings):
     """Reaction score weight configuration for metrics-only mode."""
 
-    model_config = SettingsConfigDict(env_prefix="REACTION_WEIGHT_")
+    model_config = SettingsConfigDict(
+        env_prefix="REACTION_WEIGHT_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     heart: float = Field(default=2.0, description="Weight for heart reaction")
     thumbs_up: float = Field(default=1.0, description="Weight for thumbs up reaction")

@@ -10,6 +10,9 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";  -- For trigram-based text search
 
+-- Set Russian as the default text search configuration
+ALTER DATABASE tnse SET default_text_search_config = 'pg_catalog.russian';
+
 -- Log successful initialization
 DO $$
 BEGIN
