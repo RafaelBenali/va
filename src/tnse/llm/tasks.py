@@ -36,6 +36,7 @@ from src.tnse.db.models import (
     PostContent,
     PostEnrichment,
 )
+from sqlalchemy import and_
 from src.tnse.llm.enrichment_service import EnrichmentResult, EnrichmentService
 from src.tnse.llm.groq_client import (
     GroqAuthenticationError,
@@ -337,13 +338,23 @@ async def _enrich_new_posts_async(
     errors: list[dict[str, Any]] = []
 
     async with session_factory() as session:
-        # Find posts without enrichment that have content
+        # Find posts without enrichment that have enrichable content (not media-only)
         # Using a subquery to find posts not in post_enrichments
-        subquery = select(PostEnrichment.post_id)
+        enriched_posts_subquery = select(PostEnrichment.post_id)
+        # Subquery to find media-only posts (these should be excluded)
+        media_only_posts_subquery = (
+            select(PostContent.post_id)
+            .where(PostContent.is_media_only == True)
+        )
         result = await session.execute(
             select(Post)
             .options(joinedload(Post.content))
-            .where(Post.id.notin_(subquery))
+            .where(
+                and_(
+                    Post.id.notin_(enriched_posts_subquery),
+                    Post.id.notin_(media_only_posts_subquery),
+                )
+            )
             .limit(limit)
         )
         posts = result.scalars().unique().all()
@@ -473,14 +484,22 @@ async def _enrich_channel_posts_async(
         }
 
     async with session_factory() as session:
-        # Find posts from channel without enrichment
-        subquery = select(PostEnrichment.post_id)
+        # Find posts from channel without enrichment that are not media-only
+        enriched_posts_subquery = select(PostEnrichment.post_id)
+        # Subquery to find media-only posts (these should be excluded)
+        media_only_posts_subquery = (
+            select(PostContent.post_id)
+            .where(PostContent.is_media_only == True)
+        )
         result = await session.execute(
             select(Post)
             .options(joinedload(Post.content))
             .where(
-                Post.channel_id == channel_uuid,
-                Post.id.notin_(subquery)
+                and_(
+                    Post.channel_id == channel_uuid,
+                    Post.id.notin_(enriched_posts_subquery),
+                    Post.id.notin_(media_only_posts_subquery),
+                )
             )
             .limit(limit)
         )

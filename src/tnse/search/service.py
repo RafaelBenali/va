@@ -74,8 +74,11 @@ class SearchResult:
         text_content: Full text content of the post.
         published_at: When the post was published.
         view_count: Number of views.
+        forward_count: Number of forwards/reposts.
+        reply_count: Number of replies/comments.
         reaction_score: Weighted reaction score.
         relative_engagement: Engagement normalized by subscriber count.
+        reactions: Dictionary mapping emoji names to counts.
         telegram_message_id: Message ID in Telegram.
         category: LLM-extracted topic category (optional).
         sentiment: LLM-extracted sentiment (positive/negative/neutral).
@@ -94,6 +97,10 @@ class SearchResult:
     reaction_score: float
     relative_engagement: float
     telegram_message_id: int
+    # Additional engagement metrics (Issue 3 fix)
+    forward_count: int = 0
+    reply_count: int = 0
+    reactions: dict[str, int] | None = None
     # Enrichment fields (optional, for backward compatibility)
     category: str | None = None
     sentiment: str | None = None
@@ -299,8 +306,11 @@ class SearchService:
                 p.published_at,
                 p.telegram_message_id,
                 COALESCE(em.view_count, 0) AS view_count,
+                COALESCE(em.forward_count, 0) AS forward_count,
+                COALESCE(em.reply_count, 0) AS reply_count,
                 COALESCE(em.reaction_score, 0.0) AS reaction_score,
                 COALESCE(em.relative_engagement, 0.0) AS relative_engagement,
+                em.reactions_json AS reactions,
                 NULL::VARCHAR AS category,
                 NULL::VARCHAR AS sentiment,
                 NULL::TEXT[] AS explicit_keywords,
@@ -309,10 +319,20 @@ class SearchService:
             JOIN channels c ON p.channel_id = c.id
             LEFT JOIN post_content pc ON p.id = pc.post_id
             LEFT JOIN LATERAL (
-                SELECT view_count, reaction_score, relative_engagement
-                FROM engagement_metrics
-                WHERE post_id = p.id
-                ORDER BY collected_at DESC
+                SELECT
+                    em_inner.view_count,
+                    em_inner.forward_count,
+                    em_inner.reply_count,
+                    em_inner.reaction_score,
+                    em_inner.relative_engagement,
+                    (
+                        SELECT jsonb_object_agg(rc.emoji, rc.count)
+                        FROM reaction_counts rc
+                        WHERE rc.engagement_metrics_id = em_inner.id
+                    ) AS reactions_json
+                FROM engagement_metrics em_inner
+                WHERE em_inner.post_id = p.id
+                ORDER BY em_inner.collected_at DESC
                 LIMIT 1
             ) em ON true
             WHERE p.published_at >= :cutoff_time
@@ -358,8 +378,11 @@ class SearchService:
                 p.published_at,
                 p.telegram_message_id,
                 COALESCE(em.view_count, 0) AS view_count,
+                COALESCE(em.forward_count, 0) AS forward_count,
+                COALESCE(em.reply_count, 0) AS reply_count,
                 COALESCE(em.reaction_score, 0.0) AS reaction_score,
                 COALESCE(em.relative_engagement, 0.0) AS relative_engagement,
+                em.reactions_json AS reactions,
                 pe.category,
                 pe.sentiment,
                 pe.explicit_keywords,
@@ -369,10 +392,20 @@ class SearchService:
             LEFT JOIN post_content pc ON p.id = pc.post_id
             LEFT JOIN post_enrichments pe ON p.id = pe.post_id
             LEFT JOIN LATERAL (
-                SELECT view_count, reaction_score, relative_engagement
-                FROM engagement_metrics
-                WHERE post_id = p.id
-                ORDER BY collected_at DESC
+                SELECT
+                    em_inner.view_count,
+                    em_inner.forward_count,
+                    em_inner.reply_count,
+                    em_inner.reaction_score,
+                    em_inner.relative_engagement,
+                    (
+                        SELECT jsonb_object_agg(rc.emoji, rc.count)
+                        FROM reaction_counts rc
+                        WHERE rc.engagement_metrics_id = em_inner.id
+                    ) AS reactions_json
+                FROM engagement_metrics em_inner
+                WHERE em_inner.post_id = p.id
+                ORDER BY em_inner.collected_at DESC
                 LIMIT 1
             ) em ON true
             WHERE p.published_at >= :cutoff_time
@@ -411,6 +444,20 @@ class SearchService:
         """
         results = []
         for row in rows:
+            # Extract reactions from JSONB (may be None or a dict)
+            reactions = None
+            if hasattr(row, "reactions") and row.reactions:
+                # Convert JSONB to Python dict if needed
+                if isinstance(row.reactions, dict):
+                    reactions = row.reactions
+                else:
+                    # Handle case where it might come as a string
+                    import json
+                    try:
+                        reactions = json.loads(row.reactions)
+                    except (TypeError, json.JSONDecodeError):
+                        reactions = None
+
             result = SearchResult(
                 post_id=str(row.post_id),
                 channel_id=str(row.channel_id),
@@ -422,6 +469,10 @@ class SearchService:
                 reaction_score=row.reaction_score,
                 relative_engagement=row.relative_engagement,
                 telegram_message_id=row.telegram_message_id,
+                # Additional engagement metrics (Issue 3 fix)
+                forward_count=getattr(row, "forward_count", 0) or 0,
+                reply_count=getattr(row, "reply_count", 0) or 0,
+                reactions=reactions,
             )
 
             # Add enrichment fields if available
@@ -477,8 +528,11 @@ class SearchService:
                 "text_content": result.text_content,
                 "published_at": result.published_at.isoformat(),
                 "view_count": result.view_count,
+                "forward_count": result.forward_count,
+                "reply_count": result.reply_count,
                 "reaction_score": result.reaction_score,
                 "relative_engagement": result.relative_engagement,
+                "reactions": result.reactions,
                 "telegram_message_id": result.telegram_message_id,
                 # Enrichment fields (WS-5.5)
                 "category": result.category,
@@ -510,8 +564,11 @@ class SearchService:
                 text_content=item["text_content"],
                 published_at=datetime.fromisoformat(item["published_at"]),
                 view_count=item["view_count"],
+                forward_count=item.get("forward_count", 0),
+                reply_count=item.get("reply_count", 0),
                 reaction_score=item["reaction_score"],
                 relative_engagement=item["relative_engagement"],
+                reactions=item.get("reactions"),
                 telegram_message_id=item["telegram_message_id"],
                 # Enrichment fields (WS-5.5)
                 category=item.get("category"),

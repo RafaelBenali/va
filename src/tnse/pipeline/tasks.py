@@ -17,6 +17,7 @@ Requirements addressed:
 - Wire Celery tasks to ContentCollector
 - Add proper error handling and retry logic
 - Add metrics/logging for collection job status
+- Trigger enrichment after collecting new enrichable posts (Issue 2 fix)
 """
 
 import asyncio
@@ -277,6 +278,12 @@ async def _collect_channel_content_async(
                 )
                 errors.append(f"Storage error for message {message_data.get('telegram_message_id')}: {error}")
 
+        # Count how many new posts are enrichable (not media-only)
+        enrichable_posts_count = sum(
+            1 for msg in messages
+            if msg.get("text_content") and msg.get("text_content", "").strip()
+        )
+
         # Update last_collected_message_id for resume tracking (WS-8.2)
         if max_message_id is not None:
             channel.last_collected_message_id = max_message_id
@@ -305,6 +312,7 @@ async def _collect_channel_content_async(
         "Content collection completed",
         channel_id=channel_id,
         posts_collected=posts_collected,
+        enrichable_posts=enrichable_posts_count,
         errors_count=len(errors),
         status=status
     )
@@ -313,6 +321,7 @@ async def _collect_channel_content_async(
         "status": status,
         "channel_id": channel_id,
         "posts_collected": posts_collected,
+        "enrichable_posts": enrichable_posts_count,
         "errors": errors,
     }
 
@@ -334,6 +343,7 @@ async def _collect_all_channels_async(
     """
     channels_processed = 0
     total_posts_collected = 0
+    total_enrichable_posts = 0
     errors: list[dict[str, Any]] = []
 
     async with session_factory() as session:
@@ -358,6 +368,7 @@ async def _collect_all_channels_async(
 
         channels_processed += 1
         total_posts_collected += channel_result.get("posts_collected", 0)
+        total_enrichable_posts += channel_result.get("enrichable_posts", 0)
 
         if channel_result.get("errors"):
             errors.append({
@@ -376,6 +387,7 @@ async def _collect_all_channels_async(
         "Collection completed for all channels",
         channels_processed=channels_processed,
         total_posts_collected=total_posts_collected,
+        total_enrichable_posts=total_enrichable_posts,
         channels_with_errors=len(errors),
         status=status
     )
@@ -384,6 +396,7 @@ async def _collect_all_channels_async(
         "status": status,
         "channels_processed": channels_processed,
         "posts_collected": total_posts_collected,
+        "enrichable_posts": total_enrichable_posts,
         "errors": errors,
     }
 
@@ -399,6 +412,9 @@ def collect_all_channels(self) -> dict[str, Any]:
 
     This is the main periodic task that triggers collection for all channels.
     Wired to ContentCollector and ContentStorage for actual content fetching.
+
+    After successful collection, triggers LLM enrichment if there are new
+    enrichable posts (Issue 2 fix - event-driven enrichment).
 
     Returns:
         Dictionary with collection statistics.
@@ -438,8 +454,37 @@ def collect_all_channels(self) -> dict[str, Any]:
             "collect_all_channels task completed",
             duration_seconds=result["duration_seconds"],
             channels_processed=result["channels_processed"],
-            posts_collected=result["posts_collected"]
+            posts_collected=result["posts_collected"],
+            enrichable_posts=result.get("enrichable_posts", 0)
         )
+
+        # Trigger enrichment if there are new enrichable posts (Issue 2 fix)
+        enrichable_posts = result.get("enrichable_posts", 0)
+        if enrichable_posts > 0:
+            try:
+                # Import here to avoid circular imports
+                from src.tnse.llm.tasks import enrich_new_posts
+                logger.info(
+                    "Triggering enrichment for new posts",
+                    enrichable_posts=enrichable_posts
+                )
+                # Process up to 50 posts per enrichment run
+                enrich_new_posts.delay(limit=min(enrichable_posts, 50))
+                result["enrichment_triggered"] = True
+            except ImportError:
+                logger.debug(
+                    "LLM tasks not available - skipping enrichment trigger"
+                )
+                result["enrichment_triggered"] = False
+            except Exception as enrich_error:
+                logger.warning(
+                    "Failed to trigger enrichment",
+                    error=str(enrich_error)
+                )
+                result["enrichment_triggered"] = False
+        else:
+            result["enrichment_triggered"] = False
+            logger.debug("No enrichable posts collected - skipping enrichment")
 
         return result
 

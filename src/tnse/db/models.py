@@ -310,6 +310,13 @@ class PostContent(Base, UUIDPrimaryKeyMixin):
         String(10),
         nullable=True,
     )
+    is_media_only: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        index=True,
+        comment="True if post has no enrichable text content (media-only)",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

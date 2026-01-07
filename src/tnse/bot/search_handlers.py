@@ -310,7 +310,7 @@ class SearchFormatter:
             result: The SearchResult to format.
             index: Display index (1-based).
             reference_time: Reference time for relative time display.
-            reactions: Optional reaction counts for this result.
+            reactions: Optional reaction counts for this result (deprecated, use result.reactions).
 
         Returns:
             Formatted result string.
@@ -335,9 +335,22 @@ class SearchFormatter:
         if preview:
             lines.append(f"   Preview: {preview}")
 
-        # Reactions line (if available)
-        if reactions:
-            reaction_display = self.format_reactions(reactions)
+        # Engagement metrics line (Issue 3 fix - show all metrics)
+        engagement_parts = []
+        # Use result.forward_count and result.reply_count from the SearchResult
+        forward_count = getattr(result, 'forward_count', 0) or 0
+        reply_count = getattr(result, 'reply_count', 0) or 0
+        if forward_count > 0:
+            engagement_parts.append(f"Reposts: {forward_count}")
+        if reply_count > 0:
+            engagement_parts.append(f"Comments: {reply_count}")
+        if engagement_parts:
+            lines.append(f"   {' | '.join(engagement_parts)}")
+
+        # Reactions line - prefer result.reactions over passed reactions parameter
+        result_reactions = getattr(result, 'reactions', None) or reactions
+        if result_reactions:
+            reaction_display = self.format_reactions(result_reactions)
             if reaction_display:
                 lines.append(f"   Reactions: {reaction_display}")
 

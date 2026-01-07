@@ -83,10 +83,14 @@ class ContentStorage:
         Returns:
             Dictionary containing content fields ready for insertion.
         """
+        text_content = message_data.get("text_content", "")
+        # A post is media-only if it has no text or only whitespace
+        is_media_only = not text_content or not text_content.strip()
         return {
             "post_id": post_id,
-            "text_content": message_data.get("text_content", ""),
+            "text_content": text_content,
             "language": message_data.get("language"),
+            "is_media_only": is_media_only,
         }
 
     def create_media_records(

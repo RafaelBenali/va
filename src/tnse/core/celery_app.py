@@ -67,20 +67,14 @@ celery_app = create_celery_app()
 
 
 # Celery Beat schedule configuration
+# Note: enrich_new_posts is now triggered by collect_all_channels after successful
+# collection when there are new enrichable posts (Issue 2 fix - event-driven enrichment)
 celery_app.conf.beat_schedule = {
     "collect-content-every-15-minutes": {
         "task": "src.tnse.pipeline.tasks.collect_all_channels",
         "schedule": 900.0,  # 15 minutes in seconds
         "options": {
             "expires": 840.0,  # Expire if not started within 14 minutes
-        },
-    },
-    "enrich-new-posts-every-5-minutes": {
-        "task": "src.tnse.llm.tasks.enrich_new_posts",
-        "schedule": 300.0,  # 5 minutes in seconds
-        "kwargs": {"limit": 50},  # Process up to 50 posts per run
-        "options": {
-            "expires": 280.0,  # Expire if not started within 4.5 minutes
         },
     },
 }
