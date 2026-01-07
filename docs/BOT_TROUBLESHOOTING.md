@@ -11,7 +11,8 @@ This guide helps diagnose and resolve common issues with the Telegram News Searc
 5. [Channel Issues](#channel-issues)
 6. [Export Problems](#export-problems)
 7. [Performance Issues](#performance-issues)
-8. [Recovery Procedures](#recovery-procedures)
+8. [Docker Environment Configuration Issues](#docker-environment-configuration-issues)
+9. [Recovery Procedures](#recovery-procedures)
 
 ---
 
@@ -93,6 +94,47 @@ Use these commands to quickly diagnose issues:
 1. Wait 30-60 seconds before retrying
 2. Reduce frequency of operations
 3. For bulk imports, space out operations
+
+### "relation 'channels' does not exist" (Database Error)
+
+**Cause:** Database tables have not been created. The migration has not been applied.
+
+**Solution:**
+
+1. **Make sure Docker services are running:**
+   ```bash
+   # Start PostgreSQL and Redis
+   docker compose up -d postgres redis
+
+   # Or using make
+   make docker-up
+   ```
+
+2. **Apply database migrations:**
+   ```bash
+   # Windows
+   venv\Scripts\activate
+   alembic upgrade head
+
+   # Linux/Mac
+   source venv/bin/activate
+   alembic upgrade head
+
+   # Or using make
+   make db-upgrade
+   ```
+
+3. **Verify migration was successful:**
+   ```bash
+   # Connect to database and check tables
+   docker compose exec postgres psql -U tnse_user -d tnse -c "\dt"
+   ```
+
+   You should see tables: `channels`, `posts`, `post_content`, `post_media`, `engagement_metrics`, `reaction_counts`, `saved_topics`, `topic_templates`, `bot_settings`, etc.
+
+**Note:** This error commonly occurs during first-time setup when the database is created but migrations haven't been run yet. The migration file (`alembic/versions/9bab40e1a6eb_initial_schema_channels_posts_.py`) contains all table definitions.
+
+---
 
 ### "Invalid channel format"
 
@@ -405,6 +447,111 @@ http://t.me/channel (must be https)
 
 3. **Check Redis connection:**
    - Task queue issues can cause timeouts
+
+---
+
+## Docker Environment Configuration Issues
+
+### "Telegram API credentials not configured" in Celery Worker
+
+**Symptoms:**
+```
+[WARNING/ForkPoolWorker-2] Telegram API credentials not configured - content collection disabled
+hint='Set TELEGRAM_API_ID and TELEGRAM_API_HASH'
+```
+
+**Cause:** The Docker containers are not receiving environment variables from your `.env` file.
+
+**Solution:**
+
+1. **Ensure `.env` file exists in project root:**
+   ```bash
+   # Windows
+   copy .env.example .env
+
+   # Linux/Mac
+   cp .env.example .env
+   ```
+
+2. **Verify your `.env` has Telegram credentials:**
+   ```
+   TELEGRAM_BOT_TOKEN=your_bot_token_here
+   TELEGRAM_API_ID=your_api_id_here
+   TELEGRAM_API_HASH=your_api_hash_here
+   ```
+
+3. **Rebuild and restart Docker containers:**
+   ```bash
+   docker compose down
+   docker compose up -d --build
+   ```
+
+4. **Verify environment variables are loaded:**
+   ```bash
+   # Check if variables are being passed to container
+   docker compose exec celery_worker env | grep TELEGRAM
+   ```
+
+**Note:** The `docker-compose.yml` uses `env_file: - .env` to load all variables. If you modified variables in `.env`, you must restart the containers for changes to take effect.
+
+---
+
+### PostgreSQL Authentication Failure
+
+**Symptoms:**
+```
+FATAL: password authentication failed for user "tnse_user"
+```
+
+**Cause:** PostgreSQL password mismatch. This occurs when:
+1. You initially started PostgreSQL with one password (or the default `tnse_dev_password`)
+2. You later changed `POSTGRES_PASSWORD` in your `.env` file
+3. PostgreSQL already stored the old password in its data volume
+
+**Important:** PostgreSQL only creates users during **first initialization**. Changing environment variables later does NOT update existing passwords.
+
+**Solution - Reset PostgreSQL Volume:**
+
+**WARNING:** This will delete all your data. Export important data first!
+
+```bash
+# 1. Stop all services
+docker compose down
+
+# 2. Remove the PostgreSQL volume (DELETES ALL DATA!)
+docker volume rm va_postgres_data
+
+# 3. Verify .env has correct password
+# POSTGRES_PASSWORD=your_desired_password
+
+# 4. Start fresh (creates new database with password from .env)
+docker compose up -d postgres redis
+
+# 5. Apply database migrations
+# Windows
+venv\Scripts\activate && alembic upgrade head
+
+# Linux/Mac
+source venv/bin/activate && alembic upgrade head
+
+# 6. Verify connection works
+docker compose exec postgres psql -U tnse_user -d tnse -c "SELECT 1"
+```
+
+**Alternative - Update Password Without Data Loss:**
+
+If you need to keep your data, update the password inside PostgreSQL:
+
+```bash
+# Connect as superuser (default postgres user)
+docker compose exec postgres psql -U postgres -c "ALTER USER tnse_user PASSWORD 'your_new_password';"
+
+# Then update your .env to match
+# POSTGRES_PASSWORD=your_new_password
+
+# Restart application services
+docker compose restart app celery_worker
+```
 
 ---
 
