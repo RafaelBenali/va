@@ -172,7 +172,7 @@ class TestGroqClientCompletion:
             prompt_tokens=10, completion_tokens=5, total_tokens=15
         )
 
-        with patch("groq.AsyncGroq") as mock_groq:
+        with patch("src.tnse.llm.groq_client.AsyncGroq") as mock_groq:
             mock_groq_instance = AsyncMock()
             mock_groq.return_value = mock_groq_instance
             mock_groq_instance.chat.completions.create = AsyncMock(
@@ -199,7 +199,7 @@ class TestGroqClientCompletion:
             prompt_tokens=20, completion_tokens=5, total_tokens=25
         )
 
-        with patch("groq.AsyncGroq") as mock_groq:
+        with patch("src.tnse.llm.groq_client.AsyncGroq") as mock_groq:
             mock_groq_instance = AsyncMock()
             mock_groq.return_value = mock_groq_instance
             mock_groq_instance.chat.completions.create = AsyncMock(
@@ -234,7 +234,7 @@ class TestGroqClientJSONMode:
             prompt_tokens=15, completion_tokens=10, total_tokens=25
         )
 
-        with patch("groq.AsyncGroq") as mock_groq:
+        with patch("src.tnse.llm.groq_client.AsyncGroq") as mock_groq:
             mock_groq_instance = AsyncMock()
             mock_groq.return_value = mock_groq_instance
             mock_groq_instance.chat.completions.create = AsyncMock(
@@ -260,7 +260,7 @@ class TestGroqClientJSONMode:
             prompt_tokens=10, completion_tokens=5, total_tokens=15
         )
 
-        with patch("groq.AsyncGroq") as mock_groq:
+        with patch("src.tnse.llm.groq_client.AsyncGroq") as mock_groq:
             mock_groq_instance = AsyncMock()
             mock_groq.return_value = mock_groq_instance
             mock_groq_instance.chat.completions.create = AsyncMock(
@@ -285,7 +285,7 @@ class TestGroqClientJSONMode:
             prompt_tokens=10, completion_tokens=5, total_tokens=15
         )
 
-        with patch("groq.AsyncGroq") as mock_groq:
+        with patch("src.tnse.llm.groq_client.AsyncGroq") as mock_groq:
             mock_groq_instance = AsyncMock()
             mock_groq.return_value = mock_groq_instance
             mock_groq_instance.chat.completions.create = AsyncMock(
@@ -342,7 +342,7 @@ class TestGroqClientRateLimiting:
             prompt_tokens=10, completion_tokens=5, total_tokens=15
         )
 
-        with patch("groq.AsyncGroq") as mock_groq:
+        with patch("src.tnse.llm.groq_client.AsyncGroq") as mock_groq:
             mock_groq_instance = AsyncMock()
             mock_groq.return_value = mock_groq_instance
             mock_groq_instance.chat.completions.create = AsyncMock(
@@ -391,7 +391,7 @@ class TestGroqClientErrorHandling:
                 )
             return mock_response
 
-        with patch("groq.AsyncGroq") as mock_groq:
+        with patch("src.tnse.llm.groq_client.AsyncGroq") as mock_groq:
             mock_groq_instance = AsyncMock()
             mock_groq.return_value = mock_groq_instance
             mock_groq_instance.chat.completions.create = mock_create
@@ -407,7 +407,7 @@ class TestGroqClientErrorHandling:
         """Test handling of authentication errors."""
         from src.tnse.llm.groq_client import GroqClient, GroqAuthenticationError
 
-        with patch("groq.AsyncGroq") as mock_groq:
+        with patch("src.tnse.llm.groq_client.AsyncGroq") as mock_groq:
             mock_groq_instance = AsyncMock()
             mock_groq.return_value = mock_groq_instance
 
@@ -430,7 +430,7 @@ class TestGroqClientErrorHandling:
         """Test handling of timeout errors."""
         from src.tnse.llm.groq_client import GroqClient, GroqTimeoutError
 
-        with patch("groq.AsyncGroq") as mock_groq:
+        with patch("src.tnse.llm.groq_client.AsyncGroq") as mock_groq:
             mock_groq_instance = AsyncMock()
             mock_groq.return_value = mock_groq_instance
 
@@ -447,7 +447,7 @@ class TestGroqClientErrorHandling:
         """Test that error is raised when max retries are exceeded."""
         from src.tnse.llm.groq_client import GroqClient, GroqRateLimitError
 
-        with patch("groq.AsyncGroq") as mock_groq:
+        with patch("src.tnse.llm.groq_client.AsyncGroq") as mock_groq:
             mock_groq_instance = AsyncMock()
             mock_groq.return_value = mock_groq_instance
 
@@ -481,7 +481,7 @@ class TestGroqClientResponseTracking:
         )
         mock_response.model = "qwen-qwq-32b"
 
-        with patch("groq.AsyncGroq") as mock_groq:
+        with patch("src.tnse.llm.groq_client.AsyncGroq") as mock_groq:
             mock_groq_instance = AsyncMock()
             mock_groq.return_value = mock_groq_instance
             mock_groq_instance.chat.completions.create = AsyncMock(
@@ -505,7 +505,7 @@ class TestGroqClientResponseTracking:
         )
         mock_response.model = "qwen-qwq-32b"
 
-        with patch("groq.AsyncGroq") as mock_groq:
+        with patch("src.tnse.llm.groq_client.AsyncGroq") as mock_groq:
             mock_groq_instance = AsyncMock()
             mock_groq.return_value = mock_groq_instance
             mock_groq_instance.chat.completions.create = AsyncMock(
@@ -572,7 +572,7 @@ class TestGroqClientHealthCheck:
             prompt_tokens=5, completion_tokens=1, total_tokens=6
         )
 
-        with patch("groq.AsyncGroq") as mock_groq:
+        with patch("src.tnse.llm.groq_client.AsyncGroq") as mock_groq:
             mock_groq_instance = AsyncMock()
             mock_groq.return_value = mock_groq_instance
             mock_groq_instance.chat.completions.create = AsyncMock(
@@ -589,7 +589,7 @@ class TestGroqClientHealthCheck:
         """Test that health check returns False on API error."""
         from src.tnse.llm.groq_client import GroqClient
 
-        with patch("groq.AsyncGroq") as mock_groq:
+        with patch("src.tnse.llm.groq_client.AsyncGroq") as mock_groq:
             mock_groq_instance = AsyncMock()
             mock_groq.return_value = mock_groq_instance
             mock_groq_instance.chat.completions.create = AsyncMock(

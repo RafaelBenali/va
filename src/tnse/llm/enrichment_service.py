@@ -30,35 +30,38 @@ logger = logging.getLogger(__name__)
 
 # Prompt template for LLM enrichment
 # This is the key component that instructs the LLM to extract metadata
-ENRICHMENT_PROMPT = """Analyze this Russian/Ukrainian/English Telegram post. Extract structured information.
+ENRICHMENT_PROMPT = """Проанализируй этот пост из Telegram. Извлеки структурированную информацию.
 
-POST CONTENT:
+СОДЕРЖАНИЕ ПОСТА:
 {text_content}
 
-Extract the following in JSON format:
+Верни результат в формате JSON:
 {{
-    "explicit_keywords": ["list of keywords/phrases that appear directly in the text"],
-    "implicit_keywords": ["list of related concepts, themes, entities NOT in the text but semantically relevant"],
-    "category": "primary topic category (politics, economics, technology, sports, entertainment, health, military, crime, society, other)",
+    "explicit_keywords": ["список ключевых слов/фраз, которые присутствуют непосредственно в тексте"],
+    "implicit_keywords": ["список связанных понятий, тем, сущностей, которых НЕТ в тексте, но они семантически релевантны"],
+    "category": "основная категория темы (politics, economics, technology, sports, entertainment, health, military, crime, society, other)",
     "sentiment": "positive|negative|neutral",
     "entities": {{
-        "persons": ["names of people mentioned or implied"],
-        "organizations": ["names of organizations, companies, institutions"],
-        "locations": ["geographic locations mentioned or implied"]
+        "persons": ["имена упомянутых или подразумеваемых людей"],
+        "organizations": ["названия организаций, компаний, учреждений"],
+        "locations": ["географические локации"]
     }}
 }}
 
-IMPORTANT for implicit_keywords:
-- These are concepts that a reader would associate with this content but are NOT directly mentioned in the text
-- Include related terms, synonyms, broader categories, contextual associations
-- Example: If post mentions "iPhone", implicit keywords might include ["Apple", "smartphone", "iOS", "tech gadget"]
-- Example: If post mentions "Minister caught accepting cash", implicit keywords might include ["corruption", "bribery", "scandal", "politics"]
+ВАЖНО для implicit_keywords (неявные ключевые слова):
+- Это понятия, которые читатель ассоциирует с контентом, но они НЕ упоминаются напрямую в тексте
+- Включай связанные термины, синонимы, более широкие категории, контекстные ассоциации
+- Пример: Если пост упоминает "iPhone", неявные ключевые слова могут включать ["Apple", "смартфон", "iOS", "гаджет"]
+- Пример: Если пост о "Министр пойман при получении взятки", неявные слова: ["коррупция", "взяточничество", "скандал", "политика"]
 
-IMPORTANT for explicit_keywords:
-- Extract key words and phrases that actually appear in the text
-- Focus on nouns, proper nouns, and significant terms
+ВАЖНО для explicit_keywords (явные ключевые слова):
+- Извлекай ключевые слова и фразы, которые фактически присутствуют в тексте
+- Фокусируйся на существительных, именах собственных и значимых терминах
 
-Return ONLY valid JSON, no explanations or additional text."""
+КРИТИЧЕСКИ ВАЖНО:
+- Все ключевые слова (explicit и implicit) ДОЛЖНЫ быть на русском языке
+- Имена собственные оставляй как в оригинале
+- Возвращай ТОЛЬКО валидный JSON, без объяснений и дополнительного текста"""
 
 
 class EnrichmentSettings(BaseSettings):
@@ -382,7 +385,7 @@ class EnrichmentService:
             # Make LLM call
             completion = await self.llm_client.complete_json(
                 prompt=prompt,
-                system_message="You are a content analysis assistant. Extract structured metadata from Telegram posts.",
+                system_message="Ты - ассистент для анализа контента. Извлекай структурированные метаданные из постов Telegram. Всегда отвечай на русском языке. Возвращай только валидный JSON.",
             )
 
             processing_time_ms = int((time.monotonic() - start_time) * 1000)

@@ -22,7 +22,11 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 from uuid import UUID
 
+from src.tnse.core.logging import get_logger
 from src.tnse.telegram.client import MediaInfo, MessageInfo, TelegramClient
+
+# Module-level logger
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -208,6 +212,7 @@ class ContentCollector:
         channel_uuid: UUID,
         limit: int = 100,
         min_id: int = 0,
+        channel_username: str | None = None,
     ) -> dict[str, Any]:
         """Collect messages from a channel within the content window.
 
@@ -222,6 +227,7 @@ class ContentCollector:
             min_id: Only fetch messages with ID greater than this value.
                    Use 0 for first collection (fetch all in window).
                    Use last_collected_message_id for subsequent collections.
+            channel_username: Channel username for Telethon entity resolution.
 
         Returns:
             Dictionary containing:
@@ -232,12 +238,31 @@ class ContentCollector:
         # Normalize min_id: negative values treated as 0
         effective_min_id = max(0, min_id)
 
+        logger.debug(
+            "Fetching messages from Telegram",
+            telegram_channel_id=telegram_channel_id,
+            channel_uuid=str(channel_uuid),
+            limit=limit,
+            min_id=effective_min_id,
+        )
+
         # Fetch messages from Telegram with min_id for resume tracking
         messages = await self.telegram_client.get_messages(
             channel_id=telegram_channel_id,
             limit=limit,
             min_id=effective_min_id,
+            channel_username=channel_username,
         )
+
+        # Log if no messages returned - this could indicate connection/auth issues
+        if not messages:
+            logger.warning(
+                "No messages returned from Telegram client",
+                telegram_channel_id=telegram_channel_id,
+                channel_uuid=str(channel_uuid),
+                min_id=effective_min_id,
+                hint="Check Telegram client connection and authorization status"
+            )
 
         # Filter by time window and extract data
         collected_messages: list[dict[str, Any]] = []
@@ -251,6 +276,15 @@ class ContentCollector:
                 # Track max message ID for resume tracking
                 if max_message_id is None or message.message_id > max_message_id:
                     max_message_id = message.message_id
+
+        logger.info(
+            "Collected messages from channel",
+            telegram_channel_id=telegram_channel_id,
+            channel_uuid=str(channel_uuid),
+            fetched_count=len(messages),
+            within_window_count=len(collected_messages),
+            max_message_id=max_message_id,
+        )
 
         return {
             "messages": collected_messages,
