@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "agent-chat": {
+      "command": "./venv/Scripts/python.exe",
+      "args": [".claude/mcp-servers/agent-chat/server.py"],
+      "env": {
+        "NATS_URL": "nats://localhost:4222"
+      }
+    }
+  }
+}
