@@ -21,6 +21,7 @@ Requirements addressed:
 
 import asyncio
 import time
+from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
@@ -155,11 +156,16 @@ async def _collect_channel_content_async(
                 "errors": ["Channel not found in database"],
             }
 
+        # Get last collected message ID for resume tracking (WS-8.2)
+        # Use 0 for first collection to fetch all messages in window
+        min_id = channel.last_collected_message_id or 0
+
         logger.info(
             "Collecting content from channel",
             channel_id=channel_id,
             channel_username=channel.username,
-            telegram_id=channel.telegram_id
+            telegram_id=channel.telegram_id,
+            min_id=min_id,
         )
 
         # Collect messages from Telegram
@@ -170,8 +176,11 @@ async def _collect_channel_content_async(
                 telegram_channel_id=channel.telegram_id,
                 channel_uuid=channel_uuid,
                 limit=100,
+                min_id=min_id,
+                channel_username=channel.username,
             )
             messages = collection_result.get("messages", [])
+            max_message_id = collection_result.get("max_message_id")
         except Exception as error:
             logger.error(
                 "Failed to collect messages from Telegram",
@@ -268,6 +277,16 @@ async def _collect_channel_content_async(
                 )
                 errors.append(f"Storage error for message {message_data.get('telegram_message_id')}: {error}")
 
+        # Update last_collected_message_id for resume tracking (WS-8.2)
+        if max_message_id is not None:
+            channel.last_collected_message_id = max_message_id
+            channel.last_collected_at = datetime.now(timezone.utc)
+            logger.debug(
+                "Updated last_collected_message_id",
+                channel_id=channel_id,
+                last_collected_message_id=max_message_id,
+            )
+
         # Log health status for successful/partial collection
         health_status = ChannelStatus.HEALTHY if not errors else ChannelStatus.HEALTHY
         health_error_message = None if not errors else f"{len(errors)} storage errors"
@@ -278,7 +297,7 @@ async def _collect_channel_content_async(
         )
         session.add(health_log)
 
-        # Commit all changes including health log
+        # Commit all changes including health log and resume tracking
         await session.commit()
 
     status = "completed" if not errors else "partial"

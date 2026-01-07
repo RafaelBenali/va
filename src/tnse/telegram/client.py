@@ -20,8 +20,13 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Self
 
+from src.tnse.core.logging import get_logger
+
 if TYPE_CHECKING:
     from src.tnse.core.config import Settings
+
+# Module-level logger
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -217,6 +222,7 @@ class TelethonClient(TelegramClient):
         """
         self.config = config
         self._connected = False
+        self._authorized = False
         self._client: "TelethonClientWrapper | None" = None
         self._initialize_client()
 
@@ -247,6 +253,15 @@ class TelethonClient(TelegramClient):
             return False
         return self._connected
 
+    @property
+    def is_authorized(self) -> bool:
+        """Check if client session is authorized.
+
+        Returns:
+            True if authorized with valid session, False otherwise
+        """
+        return self._authorized
+
     async def connect(self) -> None:
         """Establish connection to Telegram.
 
@@ -260,7 +275,26 @@ class TelethonClient(TelegramClient):
         try:
             await self._client.connect()
             self._connected = self._client.is_connected()
+
+            # Check authorization status after connection
+            self._authorized = await self._client.is_user_authorized()
+            if not self._authorized:
+                logger.warning(
+                    "Telegram session is not authorized",
+                    session_name=self.config.session_name,
+                    hint="Run authentication flow to authorize session"
+                )
+            else:
+                logger.info(
+                    "Telegram client connected and authorized",
+                    session_name=self.config.session_name
+                )
         except Exception as error:
+            logger.error(
+                "Failed to connect to Telegram",
+                session_name=self.config.session_name,
+                error=str(error)
+            )
             raise ConnectionError(f"Failed to connect to Telegram: {error}") from error
 
     async def disconnect(self) -> None:
@@ -293,13 +327,29 @@ class TelethonClient(TelegramClient):
             True if connected (or successfully auto-connected), False otherwise
         """
         if self._client is None:
+            logger.error(
+                "Telegram client not initialized",
+                hint="Telethon may not be installed"
+            )
             return False
 
         if not self.is_connected:
             try:
                 await self.connect()
-            except Exception:
+            except Exception as error:
+                logger.error(
+                    "Failed to auto-connect to Telegram",
+                    error=str(error),
+                    session_name=self.config.session_name
+                )
                 return False
+
+        # Warn if connected but not authorized
+        if self.is_connected and not self.is_authorized:
+            logger.warning(
+                "Client connected but session is not authorized - API calls will fail",
+                session_name=self.config.session_name
+            )
 
         return self.is_connected
 
@@ -313,6 +363,10 @@ class TelethonClient(TelegramClient):
             ChannelInfo if channel exists and is accessible, None otherwise
         """
         if not await self._ensure_connected():
+            logger.warning(
+                "Cannot get channel - not connected",
+                identifier=identifier
+            )
             return None
 
         try:
@@ -336,7 +390,13 @@ class TelethonClient(TelegramClient):
                 photo_url=None,  # Would need to download photo
                 invite_link=None,
             )
-        except Exception:
+        except Exception as error:
+            logger.error(
+                "Failed to get channel info",
+                identifier=identifier,
+                error=str(error),
+                error_type=type(error).__name__
+            )
             return None
 
     async def get_messages(
@@ -345,6 +405,7 @@ class TelethonClient(TelegramClient):
         limit: int = 100,
         offset_date: datetime | None = None,
         min_id: int = 0,
+        channel_username: str | None = None,
     ) -> list[MessageInfo]:
         """Get messages from a channel.
 
@@ -353,16 +414,40 @@ class TelethonClient(TelegramClient):
             limit: Maximum number of messages to retrieve
             offset_date: Get messages before this date
             min_id: Only get messages with ID greater than this
+            channel_username: Channel username for entity resolution (recommended)
 
         Returns:
             List of MessageInfo objects
         """
         if not await self._ensure_connected():
+            logger.warning(
+                "Cannot get messages - not connected",
+                channel_id=channel_id
+            )
             return []
+
+        # Resolve entity - prefer username for fresh sessions
+        entity = channel_id
+        if channel_username:
+            try:
+                entity = await self._client.get_entity(channel_username)
+                logger.debug(
+                    "Resolved channel entity by username",
+                    channel_username=channel_username,
+                    channel_id=channel_id
+                )
+            except Exception as resolve_error:
+                logger.warning(
+                    "Failed to resolve channel by username, falling back to ID",
+                    channel_username=channel_username,
+                    channel_id=channel_id,
+                    error=str(resolve_error)
+                )
+                entity = channel_id
 
         try:
             messages = await self._client.get_messages(
-                channel_id,
+                entity,
                 limit=limit,
                 offset_date=offset_date,
                 min_id=min_id,
@@ -370,15 +455,32 @@ class TelethonClient(TelegramClient):
 
             result = []
             for message in messages:
-                if message is None or message.message is None:
+                # Skip only if the message object itself is None
+                # Do NOT skip media-only posts (where message.message text is None)
+                if message is None:
                     continue
 
                 message_info = self._parse_message(message, channel_id)
                 if message_info:
                     result.append(message_info)
 
+            logger.debug(
+                "Retrieved messages from channel",
+                channel_id=channel_id,
+                messages_count=len(result),
+                limit=limit,
+                min_id=min_id
+            )
             return result
-        except Exception:
+        except Exception as error:
+            logger.error(
+                "Failed to get messages from channel",
+                channel_id=channel_id,
+                limit=limit,
+                min_id=min_id,
+                error=str(error),
+                error_type=type(error).__name__
+            )
             return []
 
     def _parse_message(self, message: object, channel_id: int) -> MessageInfo | None:
