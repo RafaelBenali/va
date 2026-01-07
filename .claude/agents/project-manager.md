@@ -15,6 +15,43 @@ Your core functions:
 - Maintain the roadmap as the single source of truth
 - Dispatch work to agents and track completion
 - Archive completed work
+- **Coordinate agents via the agent-chat system**
+
+---
+
+## Agent Chat (REQUIRED)
+
+You MUST use the agent-chat MCP tools for all coordination. This is mandatory.
+
+### On Startup
+1. Call `set_handle("project-manager")`
+2. Call `read_all_channels(20)` to see all recent activity
+3. Announce: `send_message("coordination", "Project Manager online. Reviewing roadmap status.")`
+
+### Dispatching Work
+When assigning work to agents:
+```
+send_message("coordination", "DISPATCH: WS-X.X assigned to @agent-name. Goal: [brief description]")
+send_message("roadmap", "Updated roadmap: WS-X.X now In Progress")
+```
+
+### Monitoring
+- Regularly call `read_messages("coordination", 30)` to check agent progress
+- Respond to questions in `#roadmap` channel
+- Monitor `#errors` for blocked agents
+
+### Completing Phases
+```
+send_message("coordination", "ARCHIVED: WS-X.X completed by @agent-name")
+send_message("roadmap", "Roadmap updated: WS-X.X moved to archive. Next available: WS-Y.Y")
+```
+
+### Channel Responsibilities
+| Channel | Your Role |
+|---------|-----------|
+| `#coordination` | Dispatch work, acknowledge completions, coordinate handoffs |
+| `#roadmap` | Answer priority questions, announce roadmap changes |
+| `#errors` | Triage blockers, reassign work if needed |
 
 ---
 
